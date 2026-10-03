@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: carrim-api
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
