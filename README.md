@@ -96,3 +96,7 @@ verify
 ```
 
 A execução pelo assistente ficou bloqueada por acesso negado ao arquivo `conf/security/java.security` do JDK local. A aplicação da formatação e a validação com Spotless ainda precisam ser executadas no IntelliJ.
+
+## Validação atualizada — 03/10/2026
+
+`mvnw.cmd verify` passou no Windows usando o JDK 25.0.4.1 já instalado, selecionado somente para o processo de validação. Os seis testes passaram, o JAR foi empacotado e o Spotless confirmou a formatação. Não houve alteração de configuração global nem conexão com banco. Esta verificação resolve as pendências de `verify` registradas acima; execução manual do JAR continua sem validação específica.
