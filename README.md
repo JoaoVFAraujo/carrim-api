@@ -2,7 +2,7 @@
 
 API do Carrim para acompanhar compras de supermercado. Este repositório e `JoaoVFAraujo/carrim-mobile` formam o mesmo produto.
 
-## Estado: 0.0.1 — Foundation
+## Estado: 0.0.2 — Domínio de compras
 
 Aplicação Spring Boot que inicializa sem banco ou credenciais, com Maven Wrapper e segurança fechada por padrão. Ainda não existem endpoints de negócio, autenticação por token, persistência ou sincronização.
 
@@ -31,7 +31,7 @@ A porta padrão é 8082 (`http://localhost:8082`). Qualquer rota é negada. GET 
 
 ```bash
 ./mvnw package
-java -jar target/carrim-api-0.0.1.jar
+java -jar target/carrim-api-0.0.2.jar
 ```
 
 Os testes verificam inicialização sem banco, bloqueio de acesso anônimo, rotas desconhecidas e bloqueio de mutação/autenticação simulada.
@@ -46,7 +46,7 @@ Namespace: `br.com.carrim`. Monólito modular com **uma única Hexagonal**, orga
 - `adapter/out`: persistência e integrações concretas.
 - `config`, `security`, `shared`: apenas responsabilidades transversais reais.
 
-A aplicação contém `security/SecurityConfig` e as primeiras regras de domínio em `domain/shared/Money` e `domain/shopping/ItemSubtotal`. As demais áreas serão criadas quando houver implementação; não existem entidades vazias ou casos de uso fictícios. ArchUnit entrará quando houver dependências de domínio/aplicação que possam ser verificadas de forma útil.
+A aplicação contém `security/SecurityConfig`, `domain/shared/Money` e o domínio de itens e sessões em `domain/shopping`. As demais áreas serão criadas quando houver implementação; não existem entidades vazias ou casos de uso fictícios. ArchUnit entrará quando houver dependências de domínio/aplicação que possam ser verificadas de forma útil.
 
 JPA, Flyway, PostgreSQL e Testcontainers entrarão na etapa de persistência. Não há datasource, migrations ou conexão com banco nesta versão. O domínio permanecerá independente dessas dependências.
 
@@ -110,3 +110,13 @@ A execução pelo assistente ficou bloqueada por acesso negado ao arquivo `conf/
 Essas regras são Java puro e ainda não estão expostas por HTTP. A verificação do backend já em execução em `http://localhost:8082` confirmou 401 para `/`, `/api/v1/products` e `/actuator/health`, conforme a segurança fechada. O frontend está disponível em `http://localhost:4202`; comunicação entre os aplicativos dependerá das futuras APIs, identidade e persistência. Próxima entrega do domínio: itens e sessão de compra, com estados e total.
 
 Validação: `mvnw.cmd spotless:apply verify` passou com Java 25; 32 testes passaram (26 de domínio e seis da fundação), Spotless confirmou a formatação e o JAR foi empacotado. Os vetores monetários reproduzem os exemplos e limites atuais do mobile, incluindo subtotal zero para pesos pequenos e soma de subtotais já arredondados.
+
+## Itens e sessões de compra — 0.0.2 — 07/10/2026
+
+`ShoppingItem` preserva ID do cliente, vínculo da sessão, produto opcional para linhas manuais e nome snapshot. Rejeita campos incompatíveis entre unidade, peso e bundle; subtotal sempre é derivado do preço, sem aceitar total informado pelo cliente.
+
+`ShoppingSession` é um agregado imutável: adicionar, substituir, remover item e alterar limite retornam nova sessão ACTIVE. Total soma os subtotais arredondados; saldo pode ficar negativo sem impedir finalização. Finalizar exige ao menos um item e data não anterior ao início. Total do caixa é opcional, aceita zero e produz diferença assinada. Cancelamento pode ocorrer sem itens. COMPLETED e CANCELED recusam todas as alterações; listas não podem ser modificadas externamente.
+
+Linhas preservam a identidade já atribuída no dispositivo. IDs repetidos ou itens de outra sessão são recusados; linhas com IDs distintos não são agrupadas automaticamente pelo servidor. Idempotência de requisição, uma compra ativa por proprietário, geração de observações de preço e transações serão responsabilidades dos próximos casos de uso e adapters. Esta versão ainda não expõe APIs de negócio nem conecta banco.
+
+Validação: 47 testes passaram (41 de domínio e seis da fundação), Spotless e empacotamento com Java 25. Artefato: `target/carrim-api-0.0.2.jar`. A versão identifica a evolução da fundação do backend; o frontend tem ciclo independente e continua em 0.0.1 nesta entrega.
