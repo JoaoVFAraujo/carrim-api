@@ -46,7 +46,7 @@ Namespace: `br.com.carrim`. Monólito modular com **uma única Hexagonal**, orga
 - `adapter/out`: persistência e integrações concretas.
 - `config`, `security`, `shared`: apenas responsabilidades transversais reais.
 
-A fundação contém a aplicação e `security/SecurityConfig`. As demais áreas serão criadas quando houver implementação; não existem entidades vazias ou casos de uso fictícios. ArchUnit entrará quando houver dependências de domínio/aplicação que possam ser verificadas de forma útil.
+A aplicação contém `security/SecurityConfig` e as primeiras regras de domínio em `domain/shared/Money` e `domain/shopping/ItemSubtotal`. As demais áreas serão criadas quando houver implementação; não existem entidades vazias ou casos de uso fictícios. ArchUnit entrará quando houver dependências de domínio/aplicação que possam ser verificadas de forma útil.
 
 JPA, Flyway, PostgreSQL e Testcontainers entrarão na etapa de persistência. Não há datasource, migrations ou conexão com banco nesta versão. O domínio permanecerá independente dessas dependências.
 
@@ -100,3 +100,13 @@ A execução pelo assistente ficou bloqueada por acesso negado ao arquivo `conf/
 ## Validação atualizada — 03/10/2026
 
 `mvnw.cmd verify` passou no Windows usando o JDK 25.0.4.1 já instalado, selecionado somente para o processo de validação. Os seis testes passaram, o JAR foi empacotado e o Spotless confirmou a formatação. Não houve alteração de configuração global nem conexão com banco. Esta verificação resolve as pendências de `verify` registradas acima; execução manual do JAR continua sem validação específica.
+
+## Valores no domínio — 07/10/2026
+
+`Money` representa BRL em centavos inteiros com `long`, soma, subtração, multiplicação e comparação. Saldos e diferenças podem ser negativos; overflow provoca erro em vez de alterar silenciosamente o valor. Não existe conversão por ponto flutuante.
+
+`ItemSubtotal` calcula unidade, peso e promoção com as regras atuais do mobile. Preço de referência: 1 a 100000000 centavos; quantidade: 1 a 9999; peso: 1 a 9999999 gramas. Peso arredonda meio centavo para cima por linha. Promoção exige grupos completos de pelo menos duas unidades e multiplica o preço do grupo, sem arredondar um preço unitário intermediário. Ex.: 824 g a R$ 6,99/kg = R$ 5,76; seis unidades em promoção 3 por R$ 10,00 = R$ 20,00.
+
+Essas regras são Java puro e ainda não estão expostas por HTTP. A verificação do backend já em execução em `http://localhost:8082` confirmou 401 para `/`, `/api/v1/products` e `/actuator/health`, conforme a segurança fechada. O frontend está disponível em `http://localhost:4202`; comunicação entre os aplicativos dependerá das futuras APIs, identidade e persistência. Próxima entrega do domínio: itens e sessão de compra, com estados e total.
+
+Validação: `mvnw.cmd spotless:apply verify` passou com Java 25; 32 testes passaram (26 de domínio e seis da fundação), Spotless confirmou a formatação e o JAR foi empacotado. Os vetores monetários reproduzem os exemplos e limites atuais do mobile, incluindo subtotal zero para pesos pequenos e soma de subtotais já arredondados.
