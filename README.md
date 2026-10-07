@@ -27,7 +27,7 @@ No Windows:
 .\mvnw.cmd spring-boot:run
 ```
 
-A porta padrão é 8080. Qualquer rota é negada. GET sem autenticação retorna 401; uma identidade autenticada de teste também é negada, com 403. Requisições de mutação sem CSRF podem retornar 403 antes da autorização.
+A porta padrão é 8082 (`http://localhost:8082`). Qualquer rota é negada. GET sem autenticação retorna 401; uma identidade autenticada de teste também é negada, com 403. Requisições de mutação sem CSRF podem retornar 403 antes da autorização.
 
 ```bash
 ./mvnw package
