@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.4 — 07/10/2026
+
+- Conexão PostgreSQL por variáveis de ambiente e migrations Flyway no schema carrim.
+- Persistência JPA de produtos/supermercados, isolamento por proprietário e versão otimista.
+- Migration V1 com chaves, constraints e unicidade de código por proprietário.
+- Testes de integração em PostgreSQL 18 isolado; script Windows alternativo ao Docker.
+- Aplicação passa a exigir banco/credenciais na execução. Segurança HTTP permanece fechada.
+- 77 testes passaram em PostgreSQL 18.2 isolado, com reaplicação de migrations e conflitos concorrentes.
+
 ## 0.0.3 — 07/10/2026
 
 - Produtos e supermercados com identidade estável e validação de nomes/códigos.

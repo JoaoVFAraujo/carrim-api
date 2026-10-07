@@ -2,9 +2,9 @@
 
 API do Carrim para acompanhar compras de supermercado. Este repositório e `JoaoVFAraujo/carrim-mobile` formam o mesmo produto.
 
-## Estado: 0.0.3 — Catálogo e observações de preço
+## Estado: 0.0.4 — Persistência inicial do catálogo
 
-Aplicação Spring Boot que inicializa sem banco ou credenciais, com Maven Wrapper e segurança fechada por padrão. Ainda não existem endpoints de negócio, autenticação por token, persistência ou sincronização.
+Aplicação Spring Boot com persistência PostgreSQL de produtos e supermercados, Flyway e segurança fechada por padrão. A execução agora exige banco e credenciais locais. Ainda não existem endpoints de negócio, autenticação por token, persistência de compras ou sincronização.
 
 ## Stack e pré-requisitos
 
@@ -12,6 +12,7 @@ Aplicação Spring Boot que inicializa sem banco ou credenciais, com Maven Wrapp
 - Spring Boot 4.1.1, Spring MVC, Spring Security e Bean Validation.
 - Maven Wrapper; não é necessário instalar Maven globalmente.
 - JUnit e suporte de testes Spring MVC/Security.
+- PostgreSQL 18, JPA/Hibernate e Flyway. Testes usam uma instância isolada, via Testcontainers ou o script Windows abaixo.
 
 ## Executar e validar
 
@@ -20,7 +21,7 @@ Aplicação Spring Boot que inicializa sem banco ou credenciais, com Maven Wrapp
 ./mvnw spring-boot:run
 ```
 
-No Windows:
+No Windows, com Docker ativo para os testes:
 
 ```powershell
 .\mvnw.cmd verify
@@ -29,12 +30,30 @@ No Windows:
 
 A porta padrão é 8082 (`http://localhost:8082`). Qualquer rota é negada. GET sem autenticação retorna 401; uma identidade autenticada de teste também é negada, com 403. Requisições de mutação sem CSRF podem retornar 403 antes da autorização.
 
-```bash
-./mvnw package
-java -jar target/carrim-api-0.0.3.jar
+No IntelliJ, recarregue o projeto Maven e mantenha na configuração de execução:
+
+```text
+SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/carrim
+SPRING_DATASOURCE_USERNAME=postgres
+SPRING_DATASOURCE_PASSWORD=<senha configurada somente no ambiente local>
 ```
 
-Os testes verificam inicialização sem banco, bloqueio de acesso anônimo, rotas desconhecidas e bloqueio de mutação/autenticação simulada.
+O banco `carrim` deve existir; a aplicação não cria banco ou usuário PostgreSQL. Ao iniciar, Flyway cria o schema `carrim` dentro desse banco e aplica as migrations. Hibernate apenas valida o schema (`ddl-auto=validate`), sem criar/apagar tabelas automaticamente; Flyway clean está desabilitado. As variáveis do IntelliJ não se propagam automaticamente ao terminal, e arquivos `.env` não são carregados automaticamente.
+
+Sem Docker ativo, este Windows pode executar os mesmos testes com os binários PostgreSQL 18 instalados:
+
+```powershell
+.\scripts\verify-local-postgres.ps1
+```
+
+O script cria um cluster exclusivo em `target/postgres-tests`, escuta somente em loopback numa porta livre e usa o banco `carrim_test`/usuário de teste. Para essa instância temporária usa autenticação trust; encerra o processo ao terminar e mantém arquivos/logs ignorados pelo Git para diagnóstico. Não usa a porta 5432, credenciais administrativas ou bancos existentes. Paths de PostgreSQL/JDK podem ser informados por `-PostgresBin` e `-JavaHome`. O caminho alternativo Testcontainers requer Docker ativo e cria PostgreSQL 18 descartável. Nenhum teste usa automaticamente a conexão configurada no IntelliJ.
+
+```bash
+./mvnw package
+java -jar target/carrim-api-0.0.4.jar
+```
+
+Os testes verificam inicialização com migrations, regras do domínio, persistência/isolamento/versionamento e bloqueio de acesso HTTP.
 
 ## Arquitetura
 
@@ -48,7 +67,7 @@ Namespace: `br.com.carrim`. Monólito modular com **uma única Hexagonal**, orga
 
 A aplicação contém `security/SecurityConfig`, `domain/shared/Money` e o domínio de itens e sessões em `domain/shopping`. As demais áreas serão criadas quando houver implementação; não existem entidades vazias ou casos de uso fictícios. ArchUnit entrará quando houver dependências de domínio/aplicação que possam ser verificadas de forma útil.
 
-JPA, Flyway, PostgreSQL e Testcontainers entrarão na etapa de persistência. Não há datasource, migrations ou conexão com banco nesta versão. O domínio permanecerá independente dessas dependências.
+JPA entities e mapeamento explícito ficam em `adapter/out/persistence`; o adapter implementa `application/catalog/CatalogRepository`. Domínio e portas permanecem independentes de Spring/JPA. A migration V1 cria apenas propriedade técnica, produtos e supermercados; compras e observações persistentes entrarão em migrations posteriores.
 
 ## Segurança e configuração
 
@@ -58,7 +77,7 @@ JPA, Flyway, PostgreSQL e Testcontainers entrarão na etapa de persistência. N�
 - Erros não expõem stack traces, mensagens internas ou binding errors.
 - Nenhum segredo hardcoded; arquivos `.env` reais são ignorados.
 - Não há CORS amplo ou Actuator público.
-- Não é necessário definir variáveis de banco nesta fundação.
+- Credenciais de banco vêm do ambiente local; nenhuma senha está no repositório.
 
 O runtime Cloud pode exigir proxy e truststore na execução do Maven. Essas configurações pertencem ao ambiente e não devem ser adicionadas ao projeto. Verificação TLS deve permanecer habilitada.
 
@@ -132,3 +151,13 @@ A revisão removeu o teto de preço unitário aplicado ao total do caixa: o dom�
 Preço por kg usa base KG; regular e bundle usam UNIT. Equivalência de bundle arredonda HALF_UP para centavos com BigDecimal, sem ponto flutuante binário, e identifica aproximação quando a divisão não é exata. Pode arredondar para zero em grupos de preço muito baixo; o preço exato do grupo continua preservado para totalizar a compra. Essas observações não são uma sugestão automática de preço de hoje.
 
 Validação: 69 testes passaram, Spotless e verify com Java 25. JAR: `target/carrim-api-0.0.3.jar`. Frontend sem alterações nesta entrega. Não há APIs de negócio, banco ou sincronização. Próxima etapa: persistência PostgreSQL local e casos de uso; autenticação/propriedade precedem exposição das APIs.
+
+## Persistência inicial — 0.0.4 — 07/10/2026
+
+A migration V1 cria `users`, `products` e `supermarkets` no schema `carrim`. `users` representa proprietários técnicos da aplicação, não usuários de login do PostgreSQL; ainda não existe endpoint para criar identidades. Produtos e supermercados exigem proprietário existente, usam UUIDs do cliente e versionamento otimista. Códigos são únicos por proprietário; produtos manuais aceitam código nulo e mercados podem ter nomes iguais para filiais.
+
+`JpaCatalogRepository` implementa a porta de catálogo com transações, consultas por proprietário/ID, mapeamento explícito e `@Version`. Escritas com versão antiga ou concorrência não sobrescrevem silenciosamente os dados. IDs existentes não são reutilizados por outro proprietário. A interface ainda não está exposta por HTTP.
+
+Validação: 77 testes passaram em PostgreSQL 18.2 isolado, incluindo migrations, reaplicação sem perder dados, round-trip, constraints, propriedade e concorrência; Spotless/verify e JAR 0.0.4 passaram. Docker estava parado, portanto a execução usou o script Windows; o caminho Testcontainers está implementado, mas não foi executado nesta sessão.
+
+A instância de teste foi encerrada. O banco `carrim` criado pelo usuário em localhost:5432 não foi conectado pelo assistente: as credenciais estão na execução do IntelliJ. Para aplicar ali, recarregue Maven e reinicie o backend com essas variáveis. O log do Flyway deve indicar schema `carrim` na versão 1. No pgAdmin, atualize `Databases → carrim → Schemas → carrim → Tables`. Próxima migration: compras, itens e observações; depois casos de uso e identidade/API.
