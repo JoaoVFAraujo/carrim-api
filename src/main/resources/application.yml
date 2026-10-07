@@ -2,6 +2,7 @@ spring:
   application:
     name: carrim-api
 server:
+  port: 8082
   error:
     include-message: never
     include-stacktrace: never
