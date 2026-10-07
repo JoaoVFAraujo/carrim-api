@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.3 — 07/10/2026
+
+- Produtos e supermercados com identidade estável e validação de nomes/códigos.
+- Observações derivadas somente de sessões finalizadas, preservando snapshots e preço original.
+- Bases de comparação UNIT/KG e equivalência promocional aproximada, com HALF_UP.
+- 69 testes, Spotless e JAR empacotado com Java 25.
+
 ## 0.0.2 — 07/10/2026
 
 - Domínio Java de dinheiro, subtotais, itens e sessões de compra.
