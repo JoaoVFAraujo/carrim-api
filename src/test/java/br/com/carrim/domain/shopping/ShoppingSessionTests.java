@@ -142,10 +142,31 @@ class ShoppingSessionTests {
         assertThrows(IllegalArgumentException.class, () -> active.complete(start.minusSeconds(1), null));
         assertThrows(IllegalArgumentException.class, () -> active.complete(null, null));
         assertThrows(IllegalArgumentException.class, () -> active.complete(finish, new Money(-1)));
-        assertThrows(IllegalArgumentException.class, () -> active.complete(finish, new Money(100_000_001)));
         assertThrows(IllegalArgumentException.class, () -> empty.cancel(start.minusSeconds(1)));
         assertEquals(ShoppingStatus.CANCELED, empty.cancel(finish).status());
         assertEquals(ShoppingStatus.ACTIVE, active.status());
+    }
+
+    @Test
+    void acceptsCheckoutTotalsAboveTheReferencePriceLimit() {
+        ShoppingItem expensive = new ShoppingItem(
+                UUID.randomUUID(),
+                id,
+                null,
+                "Wholesale",
+                MeasurementType.UNIT,
+                PricingType.REGULAR,
+                new Money(100_000_000),
+                2,
+                null,
+                null);
+        ShoppingSession active = session().addItem(expensive);
+        ShoppingSession completed = active.complete(finish, active.total());
+        assertEquals(new Money(200_000_000), completed.checkoutTotal());
+        assertEquals(Money.ZERO, completed.checkoutDifference());
+        assertEquals(
+                new Money(Long.MAX_VALUE - 200_000_000),
+                active.complete(finish, new Money(Long.MAX_VALUE)).checkoutDifference());
     }
 
     @ParameterizedTest

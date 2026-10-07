@@ -7,7 +7,8 @@
 - Limite opcional, total do caixa e diferença; finalização e cancelamento imutáveis.
 - Validação de IDs, snapshots, combinações de preço/medida e datas.
 - Backend na porta 8082, com segurança fechada e sem APIs de negócio ou banco.
-- 47 testes, Spotless e JAR empacotado com Java 25.
+- Total do caixa não negativo, sem reutilizar o teto de preço por unidade.
+- 48 testes, Spotless e JAR empacotado com Java 25.
 
 ## 0.0.1
 

@@ -28,8 +28,8 @@ public record ShoppingSession(
         if (budget != null && (budget.cents() < 1 || budget.cents() > 100_000_000)) {
             throw new IllegalArgumentException("Budget must be between 1 and 100000000 cents");
         }
-        if (checkoutTotal != null && (checkoutTotal.cents() < 0 || checkoutTotal.cents() > 100_000_000)) {
-            throw new IllegalArgumentException("Checkout total must be between 0 and 100000000 cents");
+        if (checkoutTotal != null && checkoutTotal.cents() < 0) {
+            throw new IllegalArgumentException("Checkout total must not be negative");
         }
         if (status == ShoppingStatus.ACTIVE) {
             if (finishedAt != null || checkoutTotal != null) {

@@ -119,4 +119,6 @@ Validação: `mvnw.cmd spotless:apply verify` passou com Java 25; 32 testes pass
 
 Linhas preservam a identidade já atribuída no dispositivo. IDs repetidos ou itens de outra sessão são recusados; linhas com IDs distintos não são agrupadas automaticamente pelo servidor. Idempotência de requisição, uma compra ativa por proprietário, geração de observações de preço e transações serão responsabilidades dos próximos casos de uso e adapters. Esta versão ainda não expõe APIs de negócio nem conecta banco.
 
-Validação: 47 testes passaram (41 de domínio e seis da fundação), Spotless e empacotamento com Java 25. Artefato: `target/carrim-api-0.0.2.jar`. A versão identifica a evolução da fundação do backend; o frontend tem ciclo independente e continua em 0.0.1 nesta entrega.
+Validação: 48 testes passaram (42 de domínio e seis da fundação), Spotless e empacotamento com Java 25. Artefato: `target/carrim-api-0.0.2.jar`. A versão identifica a evolução da fundação do backend; o frontend tem ciclo independente e continua em 0.0.1 nesta entrega.
+
+A revisão removeu o teto de preço unitário aplicado ao total do caixa: o domínio aceita centavos não negativos representáveis por Money, inclusive quando a soma de itens ultrapassa aquele teto. Teste confirma total calculado de 200000000 centavos com diferença zero. O formulário mobile atual ainda limita o caixa a 100000000 centavos; esse limite deverá ser alinhado ao contrato HTTP e à persistência quando forem implementados.
