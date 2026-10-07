@@ -10,7 +10,7 @@
     </parent>
     <groupId>br.com.carrim</groupId>
     <artifactId>carrim-api</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
     <name>Carrim API</name>
     <description>API do Carrim — acompanhamento de compras de supermercado.</description>
     <properties>

@@ -2,7 +2,7 @@
 
 API do Carrim para acompanhar compras de supermercado. Este repositório e `JoaoVFAraujo/carrim-mobile` formam o mesmo produto.
 
-## Estado: 0.0.2 — Domínio de compras
+## Estado: 0.0.3 — Catálogo e observações de preço
 
 Aplicação Spring Boot que inicializa sem banco ou credenciais, com Maven Wrapper e segurança fechada por padrão. Ainda não existem endpoints de negócio, autenticação por token, persistência ou sincronização.
 
@@ -31,7 +31,7 @@ A porta padrão é 8082 (`http://localhost:8082`). Qualquer rota é negada. GET 
 
 ```bash
 ./mvnw package
-java -jar target/carrim-api-0.0.2.jar
+java -jar target/carrim-api-0.0.3.jar
 ```
 
 Os testes verificam inicialização sem banco, bloqueio de acesso anônimo, rotas desconhecidas e bloqueio de mutação/autenticação simulada.
@@ -122,3 +122,13 @@ Linhas preservam a identidade já atribuída no dispositivo. IDs repetidos ou it
 Validação: 48 testes passaram (42 de domínio e seis da fundação), Spotless e empacotamento com Java 25. Artefato: `target/carrim-api-0.0.2.jar`. A versão identifica a evolução da fundação do backend; o frontend tem ciclo independente e continua em 0.0.1 nesta entrega.
 
 A revisão removeu o teto de preço unitário aplicado ao total do caixa: o domínio aceita centavos não negativos representáveis por Money, inclusive quando a soma de itens ultrapassa aquele teto. Teste confirma total calculado de 200000000 centavos com diferença zero. O formulário mobile atual ainda limita o caixa a 100000000 centavos; esse limite deverá ser alinhado ao contrato HTTP e à persistência quando forem implementados.
+
+## Catálogo e observações de preço — 0.0.3 — 07/10/2026
+
+`Product` e `Supermarket` são valores imutáveis com UUID fornecido pelo cliente e nomes de 1 a 120 caracteres. Produto aceita código opcional, armazenado como texto, com 8, 12 ou 13 dígitos ASCII, preservando zeros iniciais. Não valida dígito verificador nem unifica formatos equivalentes nesta etapa, como no mobile. Renomear preserva identidade sem alterar snapshots históricos.
+
+`PriceObservation.fromCompletedSession` deriva uma observação imutável por linha de uma sessão COMPLETED. Sessões ACTIVE e CANCELED são recusadas. A observação mantém sessão, mercado, data de finalização e o item completo, inclusive produto opcional, nome snapshot, peso e preço original. O ID da linha é reutilizado como ID da observação para derivação estável; gravação transacional e idempotência ainda dependerão da persistência.
+
+Preço por kg usa base KG; regular e bundle usam UNIT. Equivalência de bundle arredonda HALF_UP para centavos com BigDecimal, sem ponto flutuante binário, e identifica aproximação quando a divisão não é exata. Pode arredondar para zero em grupos de preço muito baixo; o preço exato do grupo continua preservado para totalizar a compra. Essas observações não são uma sugestão automática de preço de hoje.
+
+Validação: 69 testes passaram, Spotless e verify com Java 25. JAR: `target/carrim-api-0.0.3.jar`. Frontend sem alterações nesta entrega. Não há APIs de negócio, banco ou sincronização. Próxima etapa: persistência PostgreSQL local e casos de uso; autenticação/propriedade precedem exposição das APIs.
