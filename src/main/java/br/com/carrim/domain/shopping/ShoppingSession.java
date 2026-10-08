@@ -19,12 +19,17 @@ public record ShoppingSession(
         Money checkoutTotal,
         List<ShoppingItem> items) {
 
+    public static final int MAX_ITEMS = 1000;
+
     public ShoppingSession {
         Objects.requireNonNull(id, "id");
         Objects.requireNonNull(supermarketId, "supermarketId");
         Objects.requireNonNull(status, "status");
         Objects.requireNonNull(startedAt, "startedAt");
         items = List.copyOf(items);
+        if (items.size() > MAX_ITEMS) {
+            throw new IllegalArgumentException("Shopping session cannot contain more than " + MAX_ITEMS + " items");
+        }
         if (budget != null && (budget.cents() < 1 || budget.cents() > 100_000_000)) {
             throw new IllegalArgumentException("Budget must be between 1 and 100000000 cents");
         }
@@ -76,6 +81,9 @@ public record ShoppingSession(
 
     public ShoppingSession addItem(ShoppingItem item) {
         requireActive();
+        if (items.size() >= MAX_ITEMS) {
+            throw new IllegalArgumentException("Shopping session cannot contain more than " + MAX_ITEMS + " items");
+        }
         var next = new ArrayList<>(items);
         next.add(item);
         return copy(budget, status, finishedAt, checkoutTotal, next);

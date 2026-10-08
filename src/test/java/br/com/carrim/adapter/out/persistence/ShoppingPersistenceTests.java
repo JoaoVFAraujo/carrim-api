@@ -12,17 +12,22 @@ import br.com.carrim.domain.shopping.*;
 import br.com.carrim.domain.supermarket.Supermarket;
 import br.com.carrim.support.PostgresTestSupport;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest
 class ShoppingPersistenceTests extends PostgresTestSupport {
@@ -37,6 +42,9 @@ class ShoppingPersistenceTests extends PostgresTestSupport {
 
     @Autowired
     JdbcTemplate jdbc;
+
+    @Autowired
+    PlatformTransactionManager transactions;
 
     private static final Instant START = Instant.parse("2026-10-07T10:00:00Z");
     private static final Instant FINISH = START.plusSeconds(60);
@@ -69,6 +77,56 @@ class ShoppingPersistenceTests extends PostgresTestSupport {
 
     private long count(String table, UUID id) {
         return jdbc.queryForObject("SELECT count(*) FROM carrim." + table + " WHERE session_id=?", Long.class, id);
+    }
+
+    @Test
+    void predictedNextVersionCannotExceedLimitAfterWaitingForTheAggregateLock() throws Exception {
+        Fixture f = fixture();
+        var initial = new ArrayList<ShoppingItem>();
+        for (int index = 0; index < ShoppingSession.MAX_ITEMS - 1; index++) {
+            initial.add(unit(f, UUID.randomUUID(), 1, null));
+        }
+        repository.mutate(
+                f.owner(),
+                f.id(),
+                0,
+                current -> new ShoppingSession(
+                        current.id(),
+                        current.supermarketId(),
+                        current.budget(),
+                        current.status(),
+                        current.startedAt(),
+                        current.finishedAt(),
+                        current.checkoutTotal(),
+                        initial));
+        var started = new CountDownLatch(1);
+        var pending = new AtomicReference<CompletableFuture<Boolean>>();
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            new TransactionTemplate(transactions).executeWithoutResult(transaction -> {
+                operations.addItem(f.owner(), f.id(), 1, unit(f, UUID.randomUUID(), 1, null));
+                pending.set(CompletableFuture.supplyAsync(
+                        () -> {
+                            started.countDown();
+                            try {
+                                operations.addItem(f.owner(), f.id(), 2, unit(f, UUID.randomUUID(), 1, null));
+                                return true;
+                            } catch (IllegalArgumentException expected) {
+                                return false;
+                            }
+                        },
+                        executor));
+                try {
+                    assertTrue(started.await(10, TimeUnit.SECONDS));
+                } catch (InterruptedException exception) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException(exception);
+                }
+            });
+            assertFalse(pending.get().get(10, TimeUnit.SECONDS));
+        }
+        var persisted = repository.find(f.owner(), f.id()).orElseThrow();
+        assertEquals(ShoppingSession.MAX_ITEMS, persisted.value().items().size());
+        assertEquals(2, persisted.version());
     }
 
     @Test

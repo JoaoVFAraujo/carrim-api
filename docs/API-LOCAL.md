@@ -80,7 +80,7 @@ Finalização, com header `Idempotency-Key: UUID`:
 
 Checkout pode ser omitido/nulo ou zero; deve ser inteiro não negativo até 9007199254740991. Resposta tem calculatedTotalCents, checkoutTotalCents, checkoutDifferenceCents, version e itens. Mesmo usuário/chave/pedido retorna o mesmo resultado lógico, inclusive após renovação do Bearer. Reutilizar chave com outro pedido retorna 409 IDEMPOTENCY_CONFLICT. Recibo, compra e histórico são gravados juntos. A idempotência persistente aplica-se à finalização; outros comandos usam UUID/versão e podem retornar conflito em replay.
 
-Datas são ISO-8601 UTC; início/finalização/cancelamento são truncados para microssegundos. Cancelamento: `{version,canceledAt}`. Compras encerradas recusam alterações. Histórico conserva referência original e normalizedPriceCents; approximate indica divisão de bundle não exata. Listas de preços não alteram itens.
+Datas são ISO-8601 UTC; início/finalização/cancelamento são truncados para microssegundos. Cancelamento: `{version,canceledAt}`. Compras encerradas recusam alterações. O limite de 1000 itens é verificado no agregado dentro da mutação transacional bloqueada, inclusive sob concorrência. Histórico conserva referência original e normalizedPriceCents; approximate indica divisão de bundle não exata. Listas de preços não alteram itens.
 
 Integração do mobile/armazenamento seguro, sync, vinculação de contas, proteção distribuída e deploy continuam pendentes. Para aplicar V3/V4 localmente: recarregar Maven e reiniciar com credenciais já configuradas; nenhum segredo adicional de assinatura é necessário.
 

@@ -6,7 +6,8 @@
 - DTOs monetários exatos, paginação, validação e conflitos de versão.
 - V4 com recibos de finalização idempotente e rollback transacional completo.
 - Limite local no bootstrap anônimo; HTTP real, concorrência, replay e isolamento testados.
-- 111 testes, Spotless/verify e JAR; contratos e status atualizados.
+- Limite de 1000 itens validado no agregado dentro da mutação bloqueada, incluindo versões seguintes previstas.
+- 113 testes, Spotless/verify e JAR; contratos e status atualizados.
 
 ## 0.0.7 — 07/10/2026
 

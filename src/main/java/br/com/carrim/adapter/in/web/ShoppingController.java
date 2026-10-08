@@ -247,8 +247,7 @@ public class ShoppingController {
             @PathVariable UUID id,
             @Valid @RequestBody ItemWrite input) {
         UUID owner = ApiActor.owner(actor);
-        var current = owned(owner, id);
-        if (current.value().items().size() >= 1000) throw new IllegalArgumentException("Item limit reached");
+        owned(owner, id);
         product(owner, input.item().productId());
         return ShoppingView.of(
                 operations.addItem(owner, id, input.version(), input.item().toDomain(id)));
