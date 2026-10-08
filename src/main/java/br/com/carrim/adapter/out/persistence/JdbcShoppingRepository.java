@@ -3,6 +3,7 @@ package br.com.carrim.adapter.out.persistence;
 import br.com.carrim.application.shopping.PriceHistoryEntry;
 import br.com.carrim.application.shopping.ShoppingConflictException;
 import br.com.carrim.application.shopping.ShoppingRepository;
+import br.com.carrim.application.shopping.ShoppingSummary;
 import br.com.carrim.application.shopping.StoredShopping;
 import br.com.carrim.domain.pricing.ComparisonBasis;
 import br.com.carrim.domain.shared.Money;
@@ -32,6 +33,75 @@ public class JdbcShoppingRepository implements ShoppingRepository {
 
     public JdbcShoppingRepository(JdbcTemplate jdbc) {
         this.jdbc = jdbc;
+    }
+
+    @Override
+    @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+    public Optional<StoredShopping> active(UUID owner) {
+        var ids = jdbc.query(
+                "SELECT id FROM carrim.shopping_sessions WHERE user_id=? AND status='ACTIVE'",
+                (rs, n) -> rs.getObject(1, UUID.class),
+                Objects.requireNonNull(owner));
+        return ids.isEmpty() ? Optional.empty() : load(owner, ids.getFirst(), false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ShoppingSummary> list(UUID owner, ShoppingStatus status, int limit, int offset) {
+        if (limit < 1 || limit > 100 || offset < 0 || offset > 1000000)
+            throw new IllegalArgumentException("Invalid page");
+        return jdbc.query(
+                """
+                SELECT s.*, coalesce(sum(i.subtotal_cents),0) AS total,count(i.id) AS item_count
+                FROM carrim.shopping_sessions s LEFT JOIN carrim.shopping_items i ON i.session_id=s.id
+                WHERE s.user_id=? AND (?::varchar IS NULL OR s.status=?) GROUP BY s.id
+                ORDER BY s.started_at DESC,s.id LIMIT ? OFFSET ?
+                """,
+                (rs, n) -> new ShoppingSummary(
+                        rs.getObject("id", UUID.class),
+                        rs.getObject("supermarket_id", UUID.class),
+                        ShoppingStatus.valueOf(rs.getString("status")),
+                        rs.getTimestamp("started_at").toInstant(),
+                        rs.getTimestamp("finished_at") == null
+                                ? null
+                                : rs.getTimestamp("finished_at").toInstant(),
+                        rs.getObject("budget_cents", Long.class),
+                        rs.getObject("checkout_total_cents", Long.class),
+                        rs.getLong("total"),
+                        rs.getLong("item_count"),
+                        rs.getLong("version")),
+                Objects.requireNonNull(owner),
+                status == null ? null : status.name(),
+                status == null ? null : status.name(),
+                limit,
+                offset);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<PriceHistoryEntry> lastPrice(UUID owner, UUID product, UUID market, MeasurementType measurement) {
+        return jdbc
+                .query(
+                        """
+                SELECT i.*,o.supermarket_id,o.observed_at,o.comparison_basis,o.normalized_price_cents
+                FROM carrim.price_observations o JOIN carrim.shopping_items i ON i.id=o.id
+                WHERE o.user_id=? AND i.product_id=? AND o.supermarket_id=? AND i.measurement_type=? AND i.pricing_type='REGULAR'
+                ORDER BY o.observed_at DESC,o.id DESC LIMIT 1
+                """,
+                        (rs, n) -> new PriceHistoryEntry(
+                                rs.getObject("id", UUID.class),
+                                rs.getObject("session_id", UUID.class),
+                                rs.getObject("supermarket_id", UUID.class),
+                                rs.getTimestamp("observed_at").toInstant(),
+                                item(rs),
+                                ComparisonBasis.valueOf(rs.getString("comparison_basis")),
+                                new Money(rs.getLong("normalized_price_cents"))),
+                        Objects.requireNonNull(owner),
+                        product,
+                        market,
+                        measurement.name())
+                .stream()
+                .findFirst();
     }
 
     @Override

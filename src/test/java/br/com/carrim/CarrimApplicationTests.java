@@ -16,6 +16,6 @@ class CarrimApplicationTests extends PostgresTestSupport {
 
     @Test
     void contextLoadsWithMigratedPostgres() {
-        assertEquals("3", flyway.info().current().getVersion().getVersion());
+        assertEquals("4", flyway.info().current().getVersion().getVersion());
     }
 }

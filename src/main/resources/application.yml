@@ -1,6 +1,9 @@
 spring:
   application:
     name: carrim-api
+  jackson:
+    deserialization:
+      accept-float-as-int: false
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/carrim}
     username: ${SPRING_DATASOURCE_USERNAME:postgres}
