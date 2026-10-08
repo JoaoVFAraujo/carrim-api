@@ -4,7 +4,7 @@ API do Carrim para acompanhar compras de supermercado. Este repositório e `Joao
 
 ## Estado: 0.0.8 — APIs de negócio protegidas
 
-Aplicação Spring Boot com PostgreSQL, identidade anônima e APIs protegidas de catálogo/compras. A execução exige banco e credenciais locais. Integração HTTP, armazenamento seguro e sincronização no mobile continuam pendentes.
+Aplicação Spring Boot com PostgreSQL, identidade anônima e APIs protegidas de catálogo/compras. A execução exige banco e credenciais locais. Frontend 0.0.2 prepara identidade protegida e consultas HTTP; a interface ainda funciona localmente e a sincronização permanece pendente. A validação do armazenamento em aparelho e a configuração HTTPS nativa ainda precisam ser concluídas.
 
 ## Stack e pré-requisitos
 
