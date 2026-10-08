@@ -2709,6 +2709,7 @@ Request:
 ```json
 {
   "installationId": "f412d819-665a-4aa7-b74d-898bd58943ca",
+  "installationSecret": "<32 bytes aleatórios em base64url sem padding>",
   "devicePlatform": "ANDROID",
   "appVersion": "1.0.0"
 }
@@ -2726,7 +2727,7 @@ Response:
 }
 ```
 
-A chamada é idempotente por `installationId` e não exige tela de cadastro.
+A implementação preserva o mesmo usuário quando `installationId` e a prova `installationSecret` conferem, e renova o token opaco. A prova deve ser gerada com CSPRNG e guardada de forma segura no dispositivo; conhecer somente o UUID não autentica nem recupera a conta. A resposta perdida pode ser recuperada por nova chamada com a mesma prova, sem tela de cadastro. Contrato implementado e status atual estão em `API-LOCAL.md` e `STATUS-DESENVOLVIMENTO.md` nesta pasta; idempotência da identidade não significa repetir o mesmo token após renovação.
 
 # 80. Produtos
 

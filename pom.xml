@@ -10,13 +10,17 @@
     </parent>
     <groupId>br.com.carrim</groupId>
     <artifactId>carrim-api</artifactId>
-    <version>0.0.6</version>
+    <version>0.0.7</version>
     <name>Carrim API</name>
     <description>API do Carrim — acompanhamento de compras de supermercado.</description>
     <properties>
         <java.version>25</java.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit</artifactId>
