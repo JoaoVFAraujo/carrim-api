@@ -43,7 +43,7 @@ class SecurityConfigTests extends PostgresTestSupport {
     }
 
     @Test
-    void mutationWithoutCsrfIsForbidden() throws Exception {
-        mockMvc.perform(post("/api/v1/products")).andExpect(status().isForbidden());
+    void mutationWithoutBearerIsUnauthorized() throws Exception {
+        mockMvc.perform(post("/api/v1/products")).andExpect(status().isUnauthorized());
     }
 }

@@ -57,6 +57,7 @@ class MigrationUpgradeTests extends PostgresTestSupport {
                 .dataSource(url, username, password)
                 .schemas("carrim")
                 .defaultSchema("carrim")
+                .target("2")
                 .load();
         assertEquals(1, second.migrate().migrationsExecuted);
         assertEquals("2", second.info().current().getVersion().getVersion());

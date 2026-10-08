@@ -2,9 +2,9 @@
 
 API do Carrim para acompanhar compras de supermercado. Este repositório e `JoaoVFAraujo/carrim-mobile` formam o mesmo produto.
 
-## Estado: 0.0.6 — Persistência e verificações de arquitetura
+## Estado: 0.0.7 — Identidade anônima
 
-Aplicação Spring Boot com persistência PostgreSQL de catálogo, compras, itens e registros de preço, Flyway e segurança fechada por padrão. A execução exige banco e credenciais locais. Ainda não existem endpoints de negócio, autenticação por token ou sincronização com o mobile.
+Aplicação Spring Boot com persistência PostgreSQL de catálogo/compras e identidade anônima por Bearer. A execução exige banco e credenciais locais. Cadastro técnico e consulta da identidade estão disponíveis; endpoints de negócio e sincronização mobile são as próximas etapas.
 
 ## Stack e pré-requisitos
 
@@ -50,7 +50,7 @@ O script cria um cluster exclusivo em `target/postgres-tests`, escuta somente em
 
 ```bash
 ./mvnw package
-java -jar target/carrim-api-0.0.6.jar
+java -jar target/carrim-api-0.0.7.jar
 ```
 
 Os testes verificam inicialização com migrations, regras do domínio, persistência/isolamento/versionamento e bloqueio de acesso HTTP.
@@ -71,9 +71,9 @@ JPA entities e mapeamento explícito do catálogo ficam em `adapter/out/persiste
 
 ## Segurança e configuração
 
-- `anyRequest().denyAll()`; nenhuma rota pública.
+- Apenas POST `/api/v1/auth/anonymous` é público. GET `/api/v1/auth/me` exige Bearer emitido pela aplicação; demais rotas permanecem negadas nesta versão.
 - Sem login por formulário, HTTP Basic, usuário padrão ou senha gerada.
-- Sem sessão HTTP; CSRF preservado até a implementação consciente de bearer tokens.
+- Sem sessão HTTP ou autenticação por cookies. CSRF desabilitado somente na cadeia `/api/v1/**`, que usa Bearer/prova JSON; outras rotas preservam CSRF e permanecem fechadas.
 - Erros não expõem stack traces, mensagens internas ou binding errors.
 - Nenhum segredo hardcoded; arquivos `.env` reais são ignorados.
 - Não há CORS amplo ou Actuator público.
@@ -177,3 +177,11 @@ Validação: 87 testes passaram em PostgreSQL 18.2 isolado, Spotless/verify e JA
 ArchUnit 1.5.0 está limitado ao escopo de teste. Quatro regras verificam o bytecode de produção: domínio depende apenas de Java/domínio; aplicação depende apenas de Java/aplicação/domínio; entidades JPA ficam no adapter de persistência; pacotes principais não formam ciclos. Classes de teste são excluídas da importação. Referência: [guia oficial do ArchUnit](https://www.archunit.org/userguide/html/000_Index.html).
 
 Validação final: 91 testes passaram, Spotless/verify e JAR 0.0.6 com Java 25. Schema permanece na V2; esta entrega não modifica runtime ou frontend além do número de versão. Para atualizar o banco local, recarregue Maven e reinicie com a configuração existente; o log do Flyway deverá indicar V2. Próximas entregas: identidade anônima segura, APIs e sincronização do mobile. A integração HTTP ainda não está implementada.
+
+## Identidade anônima — 0.0.7 — 07/10/2026
+
+V3 adiciona instalações anônimas. O cliente cria UUID e prova aleatória de 32 bytes, codificada em base64url canônico sem padding (43 caracteres). Envia instalação, prova, plataforma e versão a POST `/api/v1/auth/anonymous`. O servidor cria proprietário ANONYMOUS e token opaco aleatório de 256 bits, válido por 30 dias. Repetir com a mesma prova mantém proprietário e renova token, revogando o anterior; UUID isolado não permite recuperar conta. Criação/renovação concorrente é serializada e transacional.
+
+Provas e tokens são persistidos somente como hashes SHA-256; comparação da prova usa MessageDigest.isEqual. GET `/api/v1/auth/me` verifica token e expiração via introspector local do Spring Security Resource Server. Não há introspecção remota, JWT/segredo de assinatura ou senha de aplicação. Objetos de credenciais têm toString redigido e erros não retornam valores rejeitados. Bootstrap deve ser enviado sem Bearer antigo; prova permite renovação após expiração. O mobile ainda precisa implementar armazenamento seguro da prova/token, sem localStorage, e integração HTTP.
+
+Validação: 99 testes passaram em PostgreSQL 18.2 isolado, Spotless/verify e JAR. Incluem bootstrap HTTP, prova inválida, renovação/revogação, expiração, concorrência, hashes em banco, principal Bearer e rejeição de cookie. Contrato: [API local](docs/API-LOCAL.md). Progresso: [status de desenvolvimento](docs/STATUS-DESENVOLVIMENTO.md).

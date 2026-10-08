@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.7 — 07/10/2026
+
+- Identidade anônima com prova da instalação e token Bearer opaco, expiração e renovação.
+- Migration V3 guarda somente hashes de credenciais.
+- Spring Security Resource Server com validação local e rota protegida de identidade.
+- 99 testes passaram; documentação de contrato e status adicionada.
+
 ## 0.0.6 — 07/10/2026
 
 - Regras ArchUnit para manter domínio/aplicação independentes de frameworks e adapters.
