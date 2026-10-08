@@ -8,6 +8,7 @@ import br.com.carrim.domain.supermarket.Supermarket;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.persistence.PersistenceContext;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -20,6 +21,58 @@ import org.springframework.transaction.annotation.Transactional;
 public class JpaCatalogRepository implements CatalogRepository {
     @PersistenceContext
     private EntityManager entityManager;
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Versioned<Product>> products(UUID owner, int limit, int offset) {
+        page(limit, offset);
+        return entityManager
+                .createQuery(
+                        "select p from ProductEntity p where p.ownerId=:owner order by p.name,p.id",
+                        ProductEntity.class)
+                .setParameter("owner", Objects.requireNonNull(owner))
+                .setMaxResults(limit)
+                .setFirstResult(offset)
+                .getResultStream()
+                .map(row -> new Versioned<>(row.toDomain(), row.version))
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<Versioned<Product>> productByBarcode(UUID owner, String code) {
+        if (code == null || !code.matches("(?:[0-9]{8}|[0-9]{12}|[0-9]{13})"))
+            throw new IllegalArgumentException("Invalid barcode");
+        return entityManager
+                .createQuery(
+                        "select p from ProductEntity p where p.ownerId=:owner and p.barcode=:code", ProductEntity.class)
+                .setParameter("owner", Objects.requireNonNull(owner))
+                .setParameter("code", code)
+                .getResultStream()
+                .map(row -> new Versioned<>(row.toDomain(), row.version))
+                .findFirst();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Versioned<Supermarket>> supermarkets(UUID owner, int limit, int offset) {
+        page(limit, offset);
+        return entityManager
+                .createQuery(
+                        "select s from SupermarketEntity s where s.ownerId=:owner order by s.name,s.id",
+                        SupermarketEntity.class)
+                .setParameter("owner", Objects.requireNonNull(owner))
+                .setMaxResults(limit)
+                .setFirstResult(offset)
+                .getResultStream()
+                .map(row -> new Versioned<>(row.toDomain(), row.version))
+                .toList();
+    }
+
+    private static void page(int limit, int offset) {
+        if (limit < 1 || limit > 100 || offset < 0 || offset > 1000000)
+            throw new IllegalArgumentException("Invalid page");
+    }
 
     @Override
     public Versioned<Product> createProduct(UUID ownerId, Product product) {

@@ -2,10 +2,17 @@ package br.com.carrim.application.catalog;
 
 import br.com.carrim.domain.catalog.Product;
 import br.com.carrim.domain.supermarket.Supermarket;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface CatalogRepository {
+    List<Versioned<Product>> products(UUID ownerId, int limit, int offset);
+
+    Optional<Versioned<Product>> productByBarcode(UUID ownerId, String barcode);
+
+    List<Versioned<Supermarket>> supermarkets(UUID ownerId, int limit, int offset);
+
     Versioned<Product> createProduct(UUID ownerId, Product product);
 
     Optional<Versioned<Product>> findProduct(UUID ownerId, UUID id);

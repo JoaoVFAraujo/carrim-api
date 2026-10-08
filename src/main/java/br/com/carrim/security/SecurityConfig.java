@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.core.DefaultOAuth2AuthenticatedPrinci
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthentication;
 import org.springframework.security.oauth2.server.resource.introspection.BadOpaqueTokenException;
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
@@ -49,12 +50,16 @@ public class SecurityConfig {
     @Order(1)
     SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
         return http.securityMatcher("/api/v1/**")
+                .addFilterBefore(new BootstrapRateFilter(), BearerTokenAuthenticationFilter.class)
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/anonymous")
+                        .requestMatchers(BootstrapRateFilter.ROUTE)
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/auth/me")
+                        .access(issuedToken())
+                        .requestMatchers(
+                                "/api/v1/products/**", "/api/v1/supermarkets/**", "/api/v1/shopping-sessions/**")
                         .access(issuedToken())
                         .anyRequest()
                         .denyAll())

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.8 — 08/10/2026
+
+- APIs protegidas de catálogo, mercados, compras, itens e histórico com propriedade derivada do Bearer.
+- DTOs monetários exatos, paginação, validação e conflitos de versão.
+- V4 com recibos de finalização idempotente e rollback transacional completo.
+- Limite local no bootstrap anônimo; HTTP real, concorrência, replay e isolamento testados.
+- Limite de 1000 itens validado no agregado dentro da mutação bloqueada, incluindo versões seguintes previstas.
+- Matcher normalizado compartilhado entre autorização e limite de bootstrap, evitando bypass por URL codificada.
+- 119 testes, Spotless/verify e JAR; contratos e status atualizados.
+
 ## 0.0.7 — 07/10/2026
 
 - Identidade anônima com prova da instalação e token Bearer opaco, expiração e renovação.

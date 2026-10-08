@@ -2,9 +2,9 @@
 
 API do Carrim para acompanhar compras de supermercado. Este repositório e `JoaoVFAraujo/carrim-mobile` formam o mesmo produto.
 
-## Estado: 0.0.7 — Identidade anônima
+## Estado: 0.0.8 — APIs de negócio protegidas
 
-Aplicação Spring Boot com persistência PostgreSQL de catálogo/compras e identidade anônima por Bearer. A execução exige banco e credenciais locais. Cadastro técnico e consulta da identidade estão disponíveis; endpoints de negócio e sincronização mobile são as próximas etapas.
+Aplicação Spring Boot com PostgreSQL, identidade anônima e APIs protegidas de catálogo/compras. A execução exige banco e credenciais locais. Integração HTTP, armazenamento seguro e sincronização no mobile continuam pendentes.
 
 ## Stack e pré-requisitos
 
@@ -50,7 +50,7 @@ O script cria um cluster exclusivo em `target/postgres-tests`, escuta somente em
 
 ```bash
 ./mvnw package
-java -jar target/carrim-api-0.0.7.jar
+java -jar target/carrim-api-0.0.8.jar
 ```
 
 Os testes verificam inicialização com migrations, regras do domínio, persistência/isolamento/versionamento e bloqueio de acesso HTTP.
@@ -71,7 +71,7 @@ JPA entities e mapeamento explícito do catálogo ficam em `adapter/out/persiste
 
 ## Segurança e configuração
 
-- Apenas POST `/api/v1/auth/anonymous` é público. GET `/api/v1/auth/me` exige Bearer emitido pela aplicação; demais rotas permanecem negadas nesta versão.
+- Apenas POST `/api/v1/auth/anonymous` é público. Identidade, catálogo e compras exigem Bearer emitido pela aplicação; outras rotas permanecem negadas. Propriedade é derivada do token, nunca de userId no JSON.
 - Sem login por formulário, HTTP Basic, usuário padrão ou senha gerada.
 - Sem sessão HTTP ou autenticação por cookies. CSRF desabilitado somente na cadeia `/api/v1/**`, que usa Bearer/prova JSON; outras rotas preservam CSRF e permanecem fechadas.
 - Erros não expõem stack traces, mensagens internas ou binding errors.
@@ -185,3 +185,15 @@ V3 adiciona instalações anônimas. O cliente cria UUID e prova aleatória de 3
 Provas e tokens são persistidos somente como hashes SHA-256; comparação da prova usa MessageDigest.isEqual. GET `/api/v1/auth/me` verifica token e expiração via introspector local do Spring Security Resource Server. Não há introspecção remota, JWT/segredo de assinatura ou senha de aplicação. Objetos de credenciais têm toString redigido e erros não retornam valores rejeitados. Bootstrap deve ser enviado sem Bearer antigo; prova permite renovação após expiração. O mobile ainda precisa implementar armazenamento seguro da prova/token, sem localStorage, e integração HTTP.
 
 Validação: 99 testes passaram em PostgreSQL 18.2 isolado, Spotless/verify e JAR. Incluem bootstrap HTTP, prova inválida, renovação/revogação, expiração, concorrência, hashes em banco, principal Bearer e rejeição de cookie. Contrato: [API local](docs/API-LOCAL.md). Progresso: [status de desenvolvimento](docs/STATUS-DESENVOLVIMENTO.md).
+
+## APIs de negócio — 0.0.8 — 08/10/2026
+
+Rotas protegidas oferecem criação/listagem/consulta/edição de produtos e mercados; lookup por barcode com último preço regular no mesmo mercado/medida; início, consulta/listagem/compra ativa, limite, itens, cancelamento, finalização e histórico de preços. DTOs explícitos usam centavos/gramas inteiros. Frações não são truncadas para inteiros no JSON. Coleções têm paginação limitada; lista de compras retorna resumos sem carregar todos os itens. A API admite até 1000 linhas por compra e checkout até o inteiro seguro de JavaScript, sem usar esse teto no domínio.
+
+Mutações usam versão da compra ou do cadastro. Finalização exige Idempotency-Key UUID; V4 persiste recibo/hash do pedido na mesma transação da compra/histórico. Replay com mesmo proprietário/chave/pedido devolve compra congelada; chave com outro pedido dá 409. Falha ao gravar recibo reverte compra e preços. Timestamps de início/finalização/cancelamento são truncados para microssegundos, conforme precisão PostgreSQL. O bootstrap tem limite local de 60 chamadas por endereço de conexão/janela de 60s, com no máximo 4096 endereços em memória; ignora X-Forwarded-For não confiável. Escala distribuída e proteção de borda ficam para hospedagem.
+
+Validação: 119 testes passaram com Java 25/PostgreSQL 18.2 isolado, Spotless/verify e JAR 0.0.8. Incluem fluxo HTTP misto, BOLA/IDOR, versão antiga, revogação/expiração, preço por mercado/configuração, concorrência/replay, rollback de recibo, centavos fracionários, limite de bootstrap e HTTP real em porta loopback isolada. Banco local do usuário não foi alterado pelo assistente; recarregar Maven/reiniciar aplica migrations pendentes até V4. Frontend continua 0.0.1, sem chamadas remotas; próxima etapa será armazenamento seguro e cliente HTTP antes do sync.
+
+A revisão colocou o limite de 1000 linhas no agregado, validado dentro da mutação após o bloqueio da sessão. O construtor também rejeita estados maiores que esse limite. A regressão PostgreSQL usa alterações concorrentes com versão atual e seguinte prevista, confirmando que a segunda não adiciona o item 1001 nem incrementa a versão.
+
+O filtro de limite do bootstrap compartilha o mesmo PathPatternRequestMatcher da autorização, cobrindo caminhos normalizados. Testes cobrem URL codificada, parâmetros de caminho, context path e método HTTP; teste HTTP real confirma que URL canônica/codificada usam a mesma janela. O firewall padrão permanece inalterado.

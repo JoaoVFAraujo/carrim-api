@@ -188,6 +188,21 @@ class ShoppingSessionTests {
     }
 
     @Test
+    void enforcesMaximumItemCountInTheAggregateMutation() {
+        var items = new ArrayList<ShoppingItem>();
+        for (int index = 0; index < ShoppingSession.MAX_ITEMS; index++) {
+            items.add(unit(UUID.randomUUID(), 1));
+        }
+        ShoppingSession full = new ShoppingSession(id, market, null, ShoppingStatus.ACTIVE, start, null, null, items);
+        assertEquals(ShoppingSession.MAX_ITEMS, full.items().size());
+        assertThrows(IllegalArgumentException.class, () -> full.addItem(unit(UUID.randomUUID(), 1)));
+        items.add(unit(UUID.randomUUID(), 1));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new ShoppingSession(id, market, null, ShoppingStatus.ACTIVE, start, null, null, items));
+    }
+
+    @Test
     void validatesRestoredTerminalAndActiveState() {
         ShoppingItem line = unit(UUID.randomUUID(), 1);
         assertThrows(
