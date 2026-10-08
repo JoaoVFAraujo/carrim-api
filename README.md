@@ -2,9 +2,9 @@
 
 API do Carrim para acompanhar compras de supermercado. Este repositório e `JoaoVFAraujo/carrim-mobile` formam o mesmo produto.
 
-## Estado: 0.0.4 — Persistência inicial do catálogo
+## Estado: 0.0.5 — Persistência transacional de compras
 
-Aplicação Spring Boot com persistência PostgreSQL de produtos e supermercados, Flyway e segurança fechada por padrão. A execução agora exige banco e credenciais locais. Ainda não existem endpoints de negócio, autenticação por token, persistência de compras ou sincronização.
+Aplicação Spring Boot com persistência PostgreSQL de catálogo, compras, itens e registros de preço, Flyway e segurança fechada por padrão. A execução exige banco e credenciais locais. Ainda não existem endpoints de negócio, autenticação por token ou sincronização com o mobile.
 
 ## Stack e pré-requisitos
 
@@ -50,7 +50,7 @@ O script cria um cluster exclusivo em `target/postgres-tests`, escuta somente em
 
 ```bash
 ./mvnw package
-java -jar target/carrim-api-0.0.4.jar
+java -jar target/carrim-api-0.0.5.jar
 ```
 
 Os testes verificam inicialização com migrations, regras do domínio, persistência/isolamento/versionamento e bloqueio de acesso HTTP.
@@ -67,7 +67,7 @@ Namespace: `br.com.carrim`. Monólito modular com **uma única Hexagonal**, orga
 
 A aplicação contém `security/SecurityConfig`, `domain/shared/Money` e o domínio de itens e sessões em `domain/shopping`. As demais áreas serão criadas quando houver implementação; não existem entidades vazias ou casos de uso fictícios. ArchUnit entrará quando houver dependências de domínio/aplicação que possam ser verificadas de forma útil.
 
-JPA entities e mapeamento explícito ficam em `adapter/out/persistence`; o adapter implementa `application/catalog/CatalogRepository`. Domínio e portas permanecem independentes de Spring/JPA. A migration V1 cria apenas propriedade técnica, produtos e supermercados; compras e observações persistentes entrarão em migrations posteriores.
+JPA entities e mapeamento explícito do catálogo ficam em `adapter/out/persistence`; o adapter implementa `application/catalog/CatalogRepository`. O agregado de compra usa um adapter JDBC com SQL explícito e uma transação por comando, compartilhando o datasource e o gerenciador de transação Spring. Domínio, casos de uso e portas permanecem independentes de Spring/JPA. Flyway V1 cria catálogo/propriedade; V2 cria compras, itens e histórico.
 
 ## Segurança e configuração
 
@@ -161,3 +161,13 @@ A migration V1 cria `users`, `products` e `supermarkets` no schema `carrim`. `us
 Validação: 77 testes passaram em PostgreSQL 18.2 isolado, incluindo migrations, reaplicação sem perder dados, round-trip, constraints, propriedade e concorrência; Spotless/verify e JAR 0.0.4 passaram. Docker estava parado, portanto a execução usou o script Windows; o caminho Testcontainers está implementado, mas não foi executado nesta sessão.
 
 A instância de teste foi encerrada. O banco `carrim` criado pelo usuário em localhost:5432 não foi conectado pelo assistente: as credenciais estão na execução do IntelliJ. Para aplicar ali, recarregue Maven e reinicie o backend com essas variáveis. O log do Flyway deve indicar schema `carrim` na versão 1. No pgAdmin, atualize `Databases → carrim → Schemas → carrim → Tables`. Próxima migration: compras, itens e observações; depois casos de uso e identidade/API.
+
+## Compras e histórico — 0.0.5 — 07/10/2026
+
+A V2 adiciona `shopping_sessions`, `shopping_items` e `price_observations`, mantendo a V1 intacta. FKs compostas preservam propriedade de mercados/produtos e índice parcial admite só uma compra ACTIVE por proprietário. O preço de referência acompanha a configuração UNIT/WEIGHT/BUNDLE do domínio; subtotal é coluna gerada em centavos. Campos incompatíveis são recusados.
+
+`ShoppingOperations` oferece início, adição/edição/remoção, limite, finalização e cancelamento por meio da porta `ShoppingRepository`. O adapter bloqueia a linha do agregado antes de validar a versão e executar a alteração, grava nova versão e mantém todas as escritas na mesma transação. Edições substituem as linhas do agregado ACTIVE, preservando seus IDs e ordem. Consultas usam snapshot REPEATABLE_READ para ler sessão e itens consistentemente.
+
+Finalização muda o estado e insere uma observação por item na mesma transação. O banco deriva data, mercado, base e equivalência do preço a partir da compra/item. Um trigger diferido exige histórico completo antes do commit; falha reverte estado, versão e observações. Registros e itens de compras encerradas são imutáveis, inclusive por SQL direto. Valores normalizados são gravados no histórico; nomes e preços originais vêm das linhas congeladas. Cancelamento não gera observações. Repetições com versão antiga são recusadas sem duplicar o histórico; idempotência HTTP por chave continua para a etapa de APIs/sync.
+
+Validação: 87 testes passaram em PostgreSQL 18.2 isolado, Spotless/verify e JAR 0.0.5. Incluem upgrade V1→V2 preservando catálogo, round-trip misto, propriedade, exclusividade ACTIVE, edição, histórico imutável, checkout opcional/alto, rollback após falha no segundo registro e finalização concorrente. O banco do usuário não foi migrado pelo assistente; ao reiniciar esta versão com as variáveis do IntelliJ, Flyway aplicará V2. Sem endpoints novos ou mudanças no frontend.
