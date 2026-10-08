@@ -11,6 +11,6 @@
 | Sync e conflitos | Pendente |
 | Android em aparelho | Pendente |
 
-Backend 0.0.8: 113 testes, Spotless/verify e JAR, com PostgreSQL 18.2 isolado e HTTP real em porta temporária. O limite de itens é validado no agregado após bloquear a sessão. Banco do usuário não foi migrado pelo assistente; recarregar Maven e reiniciar com variáveis locais aplica migrations pendentes até V4. Frontend não mudou nesta etapa. Nenhum banco remoto ou deploy.
+Backend 0.0.8: 119 testes, Spotless/verify e JAR, com PostgreSQL 18.2 isolado e HTTP real em porta temporária. O limite de itens é validado no agregado após bloquear a sessão; o limite do bootstrap cobre o mesmo caminho normalizado usado na autorização. Banco do usuário não foi migrado pelo assistente; recarregar Maven e reiniciar com variáveis locais aplica migrations pendentes até V4. Frontend não mudou nesta etapa. Nenhum banco remoto ou deploy.
 
 Fluxo: branch feature/fix a partir da main, PR, comentário @codex review, correções quando necessárias, merge commit e exclusão da branch. README registra execução/limitações, CHANGELOG registra versões, API-LOCAL registra contratos e documento-base permanece referência revisável.

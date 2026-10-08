@@ -7,10 +7,15 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /** Local baseline; source address comes from the connection, never an untrusted forwarded header. */
 final class BootstrapRateFilter extends OncePerRequestFilter {
+    static final RequestMatcher ROUTE =
+            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/v1/auth/anonymous");
     private static final long WINDOW = 60_000_000_000L;
     private final Map<String, Bucket> buckets = new HashMap<>();
 
@@ -18,8 +23,7 @@ final class BootstrapRateFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getMethod().equals("POST")
-                || !request.getRequestURI().equals(request.getContextPath() + "/api/v1/auth/anonymous");
+        return !ROUTE.matches(request);
     }
 
     private synchronized boolean allowed(String address) {

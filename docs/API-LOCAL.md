@@ -23,6 +23,8 @@ GET `/auth/me` exige `Authorization: Bearer <accessToken>` e retorna identidade 
 
 O cliente deve serializar chamadas de bootstrap, pois cada renovação revoga o token anterior. Desde 0.0.8, há limite local de 60 chamadas por endereço de conexão/janela de 60s (429 com Retry-After); cabeçalhos de endereço encaminhado não são confiados. Cookies continuam sem autenticar.
 
+Variações de URL aceitas como o mesmo endpoint após normalização compartilham o limite de chamadas. O filtro usa o mesmo matcher da regra de autorização; o firewall padrão continua rejeitando URLs que considera inseguras.
+
 ## Negócio — backend 0.0.8
 
 Todas as rotas abaixo exigem Bearer. Propriedade vem do token; userId enviado no JSON não concede acesso. UUID inexistente/pertencente a outro usuário retorna 404. Versão antiga retorna 409 VERSION_CONFLICT. Campos inválidos retornam 400 INVALID_REQUEST, sem ecoar valores rejeitados.

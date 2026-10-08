@@ -54,7 +54,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/anonymous")
+                        .requestMatchers(BootstrapRateFilter.ROUTE)
                         .permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/auth/me")
                         .access(issuedToken())

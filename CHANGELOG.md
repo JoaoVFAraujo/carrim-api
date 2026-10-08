@@ -7,7 +7,8 @@
 - V4 com recibos de finalização idempotente e rollback transacional completo.
 - Limite local no bootstrap anônimo; HTTP real, concorrência, replay e isolamento testados.
 - Limite de 1000 itens validado no agregado dentro da mutação bloqueada, incluindo versões seguintes previstas.
-- 113 testes, Spotless/verify e JAR; contratos e status atualizados.
+- Matcher normalizado compartilhado entre autorização e limite de bootstrap, evitando bypass por URL codificada.
+- 119 testes, Spotless/verify e JAR; contratos e status atualizados.
 
 ## 0.0.7 — 07/10/2026
 
