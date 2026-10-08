@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.6 — 07/10/2026
+
+- Regras ArchUnit para manter domínio/aplicação independentes de frameworks e adapters.
+- Verificação de localização das entidades JPA e ciclos entre pacotes principais.
+- 91 testes passaram, Spotless e JAR; sem nova migration ou mudança funcional no mobile.
+
 ## 0.0.5 — 07/10/2026
 
 - Migration V2 para compras, itens e registros de preço, preservando o catálogo V1.

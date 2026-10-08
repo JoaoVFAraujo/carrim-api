@@ -2,7 +2,7 @@
 
 API do Carrim para acompanhar compras de supermercado. Este repositório e `JoaoVFAraujo/carrim-mobile` formam o mesmo produto.
 
-## Estado: 0.0.5 — Persistência transacional de compras
+## Estado: 0.0.6 — Persistência e verificações de arquitetura
 
 Aplicação Spring Boot com persistência PostgreSQL de catálogo, compras, itens e registros de preço, Flyway e segurança fechada por padrão. A execução exige banco e credenciais locais. Ainda não existem endpoints de negócio, autenticação por token ou sincronização com o mobile.
 
@@ -50,7 +50,7 @@ O script cria um cluster exclusivo em `target/postgres-tests`, escuta somente em
 
 ```bash
 ./mvnw package
-java -jar target/carrim-api-0.0.5.jar
+java -jar target/carrim-api-0.0.6.jar
 ```
 
 Os testes verificam inicialização com migrations, regras do domínio, persistência/isolamento/versionamento e bloqueio de acesso HTTP.
@@ -65,7 +65,7 @@ Namespace: `br.com.carrim`. Monólito modular com **uma única Hexagonal**, orga
 - `adapter/out`: persistência e integrações concretas.
 - `config`, `security`, `shared`: apenas responsabilidades transversais reais.
 
-A aplicação contém `security/SecurityConfig`, `domain/shared/Money` e o domínio de itens e sessões em `domain/shopping`. As demais áreas serão criadas quando houver implementação; não existem entidades vazias ou casos de uso fictícios. ArchUnit entrará quando houver dependências de domínio/aplicação que possam ser verificadas de forma útil.
+A aplicação contém `security/SecurityConfig`, `domain/shared/Money`, domínio de compras/catálogo e casos de uso transacionais. As demais áreas serão criadas quando houver implementação; não existem entidades vazias ou casos de uso fictícios. ArchUnit verifica as dependências de produção entre as camadas durante os testes.
 
 JPA entities e mapeamento explícito do catálogo ficam em `adapter/out/persistence`; o adapter implementa `application/catalog/CatalogRepository`. O agregado de compra usa um adapter JDBC com SQL explícito e uma transação por comando, compartilhando o datasource e o gerenciador de transação Spring. Domínio, casos de uso e portas permanecem independentes de Spring/JPA. Flyway V1 cria catálogo/propriedade; V2 cria compras, itens e histórico.
 
@@ -171,3 +171,9 @@ A V2 adiciona `shopping_sessions`, `shopping_items` e `price_observations`, mant
 Finalização muda o estado e insere uma observação por item na mesma transação. O banco deriva data, mercado, base e equivalência do preço a partir da compra/item. Um trigger diferido exige histórico completo antes do commit; falha reverte estado, versão e observações. Registros e itens de compras encerradas são imutáveis, inclusive por SQL direto. Valores normalizados são gravados no histórico; nomes e preços originais vêm das linhas congeladas. Cancelamento não gera observações. Repetições com versão antiga são recusadas sem duplicar o histórico; idempotência HTTP por chave continua para a etapa de APIs/sync.
 
 Validação: 87 testes passaram em PostgreSQL 18.2 isolado, Spotless/verify e JAR 0.0.5. Incluem upgrade V1→V2 preservando catálogo, round-trip misto, propriedade, exclusividade ACTIVE, edição, histórico imutável, checkout opcional/alto, rollback após falha no segundo registro e finalização concorrente. O banco do usuário não foi migrado pelo assistente; ao reiniciar esta versão com as variáveis do IntelliJ, Flyway aplicará V2. Sem endpoints novos ou mudanças no frontend.
+
+## Verificações de arquitetura — 0.0.6 — 07/10/2026
+
+ArchUnit 1.5.0 está limitado ao escopo de teste. Quatro regras verificam o bytecode de produção: domínio depende apenas de Java/domínio; aplicação depende apenas de Java/aplicação/domínio; entidades JPA ficam no adapter de persistência; pacotes principais não formam ciclos. Classes de teste são excluídas da importação. Referência: [guia oficial do ArchUnit](https://www.archunit.org/userguide/html/000_Index.html).
+
+Validação final: 91 testes passaram, Spotless/verify e JAR 0.0.6 com Java 25. Schema permanece na V2; esta entrega não modifica runtime ou frontend além do número de versão. Para atualizar o banco local, recarregue Maven e reinicie com a configuração existente; o log do Flyway deverá indicar V2. Próximas entregas: identidade anônima segura, APIs e sincronização do mobile. A integração HTTP ainda não está implementada.
