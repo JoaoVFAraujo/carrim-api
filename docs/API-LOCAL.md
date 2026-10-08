@@ -19,7 +19,7 @@ Plataformas: ANDROID, IOS, WEB. Prova tem 43 caracteres; UUID/prova devem ser pr
 
 Repetir com a mesma instalação/prova mantém usuário, gera novo token e revoga o anterior. Prova divergente: 403; entrada inválida: 400. Banco guarda hashes, não credenciais em claro. Perder instalação/prova significa perder o mecanismo de recuperação anônimo; vinculação de conta fica para etapa futura.
 
-GET `/auth/me` exige `Authorization: Bearer <accessToken>` e retorna identidade técnica. Token desconhecido, expirado ou inválido: 401. Cookies, HTTP Basic e sessão do navegador não autenticam. Não registrar tokens/provas em logs ou commitá-los; frontend ainda não implementa armazenamento seguro nem chamadas à API.
+GET `/auth/me` exige `Authorization: Bearer <accessToken>` e retorna identidade técnica. Token desconhecido, expirado ou inválido: 401. Cookies, HTTP Basic e sessão do navegador não autenticam. Não registrar tokens/provas em logs ou commitá-los. Frontend 0.0.2 implementa serviços de identidade protegida e consultas HTTP; não inicia autenticação automaticamente nem envia a fila local. Validação nativa e sincronização permanecem pendentes.
 
 O cliente deve serializar chamadas de bootstrap, pois cada renovação revoga o token anterior. Desde 0.0.8, há limite local de 60 chamadas por endereço de conexão/janela de 60s (429 com Retry-After); cabeçalhos de endereço encaminhado não são confiados. Cookies continuam sem autenticar.
 
@@ -84,6 +84,6 @@ Checkout pode ser omitido/nulo ou zero; deve ser inteiro não negativo até 9007
 
 Datas são ISO-8601 UTC; início/finalização/cancelamento são truncados para microssegundos. Cancelamento: `{version,canceledAt}`. Compras encerradas recusam alterações. O limite de 1000 itens é verificado no agregado dentro da mutação transacional bloqueada, inclusive sob concorrência. Histórico conserva referência original e normalizedPriceCents; approximate indica divisão de bundle não exata. Listas de preços não alteram itens.
 
-Integração do mobile/armazenamento seguro, sync, vinculação de contas, proteção distribuída e deploy continuam pendentes. Para aplicar V3/V4 localmente: recarregar Maven e reiniciar com credenciais já configuradas; nenhum segredo adicional de assinatura é necessário.
+O mobile prepara consultas autenticadas e armazenamento Keystore/Keychain. No navegador, credenciais ficam apenas em memória e o proxy de desenvolvimento encaminha `/api/v1/**` para 127.0.0.1:8082; a identidade web ainda não serve para sincronizar compras persistidas. Produção/nativo permanecem sem API até configurar HTTPS. Validação em aparelho, sync, vinculação de contas, proteção distribuída e deploy continuam pendentes. Para aplicar V3/V4 localmente: recarregar Maven e reiniciar com credenciais já configuradas; nenhum segredo adicional de assinatura é necessário. Consulte [integração e segurança do mobile](https://github.com/JoaoVFAraujo/carrim-mobile/blob/main/docs/INTEGRACAO-SEGURANCA.md).
 
 Referência de implementação: [Spring Security — tokens opacos](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/opaque-token.html).
