@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.5 — 07/10/2026
+
+- Migration V2 para compras, itens e registros de preço, preservando o catálogo V1.
+- Casos de uso e adapter transacional JDBC com propriedade e versão por agregado.
+- Finalização atômica com histórico completo; imutabilidade reforçada no banco.
+- 87 testes em PostgreSQL 18.2, incluindo upgrade, rollback e concorrência.
+
 ## 0.0.4 — 07/10/2026
 
 - Conexão PostgreSQL por variáveis de ambiente e migrations Flyway no schema carrim.
