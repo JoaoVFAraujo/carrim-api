@@ -146,4 +146,43 @@ class SyncApiTests extends PostgresTestSupport {
                         .content(mapper.writeValueAsString(Map.of("operations", operations))))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void pullIsOrderedPaginatedAndOwnerScoped() throws Exception {
+        String token = actor();
+        UUID id = UUID.randomUUID();
+        push(token, market(UUID.randomUUID(), id, "Pull market"));
+        String first = mvc.perform(
+                        get("/api/v1/sync/pull").param("limit", "1").header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        var page = mapper.readTree(first);
+        assertEquals(
+                id.toString(), page.path("changes").get(0).path("aggregateId").asString());
+        String cursor = page.path("cursor").asString();
+        mvc.perform(get("/api/v1/sync/pull").param("cursor", cursor).header("Authorization", "Bearer " + actor()))
+                .andExpect(status().isBadRequest());
+        String empty = mvc.perform(
+                        get("/api/v1/sync/pull").param("cursor", cursor).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        assertEquals(0, mapper.readTree(empty).path("changes").size());
+        // Direct REST writes are journaled too, not just the sync endpoint.
+        mvc.perform(put("/api/v1/supermarkets/" + id)
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"version\":0,\"name\":\"Updated directly\"}"))
+                .andExpect(status().isOk());
+        String changed = mvc.perform(
+                        get("/api/v1/sync/pull").param("cursor", cursor).header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        assertTrue(changed.contains("Updated directly"));
+    }
 }
