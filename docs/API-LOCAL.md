@@ -87,3 +87,9 @@ Datas são ISO-8601 UTC; início/finalização/cancelamento são truncados para 
 O mobile prepara consultas autenticadas e armazenamento Keystore/Keychain. No navegador, credenciais ficam apenas em memória e o proxy de desenvolvimento encaminha `/api/v1/**` para 127.0.0.1:8082; a identidade web ainda não serve para sincronizar compras persistidas. Produção/nativo permanecem sem API até configurar HTTPS. Validação em aparelho, sync, vinculação de contas, proteção distribuída e deploy continuam pendentes. Para aplicar V3/V4 localmente: recarregar Maven e reiniciar com credenciais já configuradas; nenhum segredo adicional de assinatura é necessário. Consulte [integração e segurança do mobile](https://github.com/JoaoVFAraujo/carrim-mobile/blob/main/docs/INTEGRACAO-SEGURANCA.md).
 
 Referência de implementação: [Spring Security — tokens opacos](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/opaque-token.html).
+
+## Sync push — implementação inicial
+
+POST `/api/v1/sync/push` exige Bearer. Recebe `operations` (1–50), cada uma com `operationId`, `aggregateType`, `aggregateId`, `operation`, `baseVersion` e `payload`. Versão é obrigatória para alterar catálogo/compras e para qualquer escrita de item; CREATE de mercado/produto/compra usa versão nula. Payload de item contém `sessionId` e `item` no contrato de ItemInput; COMPLETE usa `completedAt` e `checkoutTotalCents`.
+
+Resposta por operação: APPLIED, ALREADY_APPLIED, CONFLICT ou REJECTED. Após a primeira falha, entradas posteriores ficam NOT_PROCESSED. Recibo e alteração são atômicos e isolados por proprietário; reutilizar operationId com outro conteúdo retorna IDEMPOTENCY_CONFLICT. A migration V5 cria os recibos. Nenhuma escrita deriva proprietário do JSON.

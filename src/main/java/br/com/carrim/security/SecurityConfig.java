@@ -59,7 +59,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/auth/me")
                         .access(issuedToken())
                         .requestMatchers(
-                                "/api/v1/products/**", "/api/v1/supermarkets/**", "/api/v1/shopping-sessions/**")
+                                "/api/v1/products/**",
+                                "/api/v1/supermarkets/**",
+                                "/api/v1/shopping-sessions/**",
+                                "/api/v1/sync/**")
                         .access(issuedToken())
                         .anyRequest()
                         .denyAll())
