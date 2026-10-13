@@ -22,6 +22,7 @@ import org.springframework.security.oauth2.server.resource.introspection.BadOpaq
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
@@ -51,7 +52,7 @@ public class SecurityConfig {
     SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
         return http.securityMatcher("/api/v1/**")
                 .addFilterBefore(new BootstrapRateFilter(), BearerTokenAuthenticationFilter.class)
-                .addFilterAfter(new PayloadLimitFilter(), BearerTokenAuthenticationFilter.class)
+                .addFilterAfter(new PayloadLimitFilter(), AuthorizationFilter.class)
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize

@@ -193,4 +193,12 @@ class SyncApiTests extends PostgresTestSupport {
                         .content(" ".repeat(2 * 1024 * 1024 + 1)))
                 .andExpect(status().isPayloadTooLarge());
     }
+
+    @Test
+    void unauthorizedProtectedBodiesAreNotBufferedBeforeAuthorization() throws Exception {
+        mvc.perform(post("/api/v1/sync/push")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(" ".repeat(2 * 1024 * 1024 + 1)))
+                .andExpect(status().isUnauthorized());
+    }
 }
