@@ -1,0 +1,4 @@
+*
+!target/
+target/*
+!target/carrim-api-0.0.8.jar

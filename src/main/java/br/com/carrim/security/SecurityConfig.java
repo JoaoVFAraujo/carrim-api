@@ -51,6 +51,7 @@ public class SecurityConfig {
     SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
         return http.securityMatcher("/api/v1/**")
                 .addFilterBefore(new BootstrapRateFilter(), BearerTokenAuthenticationFilter.class)
+                .addFilterAfter(new PayloadLimitFilter(), BearerTokenAuthenticationFilter.class)
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
