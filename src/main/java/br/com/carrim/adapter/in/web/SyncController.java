@@ -62,7 +62,8 @@ public class SyncController {
                 continue;
             }
             try {
-                if (!op.payload().isObject() || op.payload().toString().length() > 32768)
+                if (!op.payload().isObject()
+                        || op.payload().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 32768)
                     throw new IllegalArgumentException();
                 String request = mapper.writeValueAsString(new Operation(
                         op.operationId(),

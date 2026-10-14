@@ -1,20 +1,23 @@
-# Status do Carrim — 08/10/2026
+# Status do Carrim
+
+## Entregas atuais em PR
 
 | Parte | Estado |
 | --- | --- |
-| Frontend 0.0.2 | Compras locais preservadas; serviços de identidade protegida e consultas HTTP preparados |
-| Domínio backend | Valores exatos, compras e snapshots implementados |
-| PostgreSQL/Flyway | V1 catálogo; V2 compras/histórico; V3 instalações; V4 recibos idempotentes |
-| Identidade anônima | Prova da instalação, Bearer com expiração, renovação e revogação implementados |
-| APIs de negócio | Catálogo, mercados, compras, itens, preços e finalização idempotente implementados |
-| Armazenamento seguro mobile e cliente HTTP | Implementados em serviços; 79 testes, execução nativa pendente |
-| Sync e conflitos | Pendente |
-| Android em aparelho | Pendente |
+| Compras offline | SQLite, unidade/peso/promoção, orçamento, caixa e histórico implementados |
+| Backend | APIs protegidas, sync push idempotente, journal transacional e pull por proprietário |
+| Identidade do mobile | Keystore/Keychain e vínculo do banco ao proprietário; navegador somente em memória |
+| Fila nativa | Processador, pedido congelado, retries persistidos e recuperação de reservas |
+| Recebimento e conflitos | Bootstrap paginado, importação ordenada, preservação de edições locais e pausas explícitas |
+| Integração local | Validada com API/PostgreSQL e SQLite reais, plugins nativos substituídos no teste |
+| Android | APK debug compilado; aparelho/câmera/Keystore/SQLite nativo/atualização física pendentes |
+| Produção | Perfil com TLS verificado no banco, saúde privada, logs JSON, imagem sem root e CI preparados |
+| Publicação | Sem merge, deploy, domínio HTTPS ou release V1.0.0 |
 
-Backend 0.0.8: 119 testes, Spotless/verify e JAR, com PostgreSQL 18.2 isolado e HTTP real em porta temporária. O limite de itens é validado no agregado após bloquear a sessão; o limite do bootstrap cobre o mesmo caminho normalizado usado na autorização. Banco do usuário não foi migrado pelo assistente; recarregar Maven e reiniciar com variáveis locais aplica migrations pendentes até V4. Nenhum banco remoto ou deploy.
+Os PRs são dependentes e devem ser integrados na ordem: backend sync push → journal/pull → produção; mobile processador → pull/conflitos → teste integrado/Android → configuração HTTPS/CI. Estes resultados descrevem as branches das entregas, não a main publicada.
 
-Frontend 0.0.2: 79 testes, lint, formatação, SQLite real, build e cap sync passaram. Tokens/prova usam Keystore/Keychain no nativo e somente memória no navegador, sem fallback em texto aberto. Bootstrap/renovação são serializados; consultas repetem apenas uma vez após 401, inclusive quando o erro chega durante leitura de token em cache. Destinos externos, redirecionamentos e cookies são recusados; Android bloqueia HTTP e backup/transferência do app. Audit completo não encontrou vulnerabilidades conhecidas após ajustar o CLI Capacitor para 8.4.3.
+A identidade web não persiste ao recarregar, então o navegador não sincroniza compras. Nativo exige configurar HTTPS antes do build. Conflitos preservam dados e interrompem dependentes, sem sobrescrita silenciosa; resolução assistida permanece pendente.
 
-O desenvolvimento web usa proxy localhost:4202 → 127.0.0.1:8082 para `/api/v1/**`, sem abrir CORS. API de produção/nativa permanece desabilitada até configurar HTTPS. Não há conexão automática nem envio de compras; o próximo passo é vincular os dados a um proprietário estável e sincronizar a fila com idempotência/conflitos. A identidade web não persiste ao recarregar, portanto não serve ainda para sincronização de compras persistidas. Detalhes em [integração do mobile](https://github.com/JoaoVFAraujo/carrim-mobile/blob/main/docs/INTEGRACAO-SEGURANCA.md).
+Verificações: Maven verify com PostgreSQL isolado, frontend tests/lint/formatação/SQLite/build, teste integrado opt-in e assembleDebug. Produção foi validada localmente com certificado de teste, banco TLS, readiness UP/DOWN e porta principal sem acesso ao health. Não é validação de infraestrutura pública.
 
-Fluxo: branch feature/fix a partir da main, PR, comentário @codex review, correções quando necessárias, merge commit e exclusão da branch. README registra execução/limitações, CHANGELOG registra versões, API-LOCAL registra contratos e documento-base permanece referência revisável.
+Próximas dependências externas: aparelho Android e compra real no supermercado; endereço HTTPS, banco/CA/segredos reais, backup/restauração e assinatura/distribuição de release. Consulte API-LOCAL, PRODUCAO e os roteiros de integração/Android do mobile.

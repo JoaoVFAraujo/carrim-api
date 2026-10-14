@@ -185,4 +185,20 @@ class SyncApiTests extends PostgresTestSupport {
                 .getContentAsString();
         assertTrue(changed.contains("Updated directly"));
     }
+
+    @Test
+    void capsApiRequestBodiesBeforeParsing() throws Exception {
+        mvc.perform(post("/api/v1/auth/anonymous")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(" ".repeat(2 * 1024 * 1024 + 1)))
+                .andExpect(status().isPayloadTooLarge());
+    }
+
+    @Test
+    void unauthorizedProtectedBodiesAreNotBufferedBeforeAuthorization() throws Exception {
+        mvc.perform(post("/api/v1/sync/push")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(" ".repeat(2 * 1024 * 1024 + 1)))
+                .andExpect(status().isUnauthorized());
+    }
 }
