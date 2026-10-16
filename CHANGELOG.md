@@ -5,7 +5,8 @@
 - Push idempotente (V5), journal/pull por proprietário (V6), perfil de produção e CI integrados pelos PRs #11–#13.
 - Revisões finais: autorização antes do limite de corpo e health sem sessão/cache.
 - Última execução registrada: 130 testes backend passaram. Sem nova versão publicada.
-- Ver [registro de retomada](docs/RETOMADA-PC.md) para evidências, commits e validações pendentes.
+- Documentação consolidada a partir do Cloud e do PC: produto, segurança, contrato, roadmap/métricas e referências visuais; sem mudança funcional ou incremento de versão.
+- Ver [roadmap](docs/ROADMAP.md) para evidências, entregas e validações pendentes; resultados acima pertencem ao Cloud.
 
 ## 0.0.8 — 08/10/2026
 
