@@ -19,7 +19,7 @@ Plataformas: ANDROID, IOS, WEB. Prova tem 43 caracteres; UUID/prova devem ser pr
 
 Repetir com a mesma instalação/prova mantém usuário, gera novo token e revoga o anterior. Prova divergente: 403; entrada inválida: 400. Banco guarda hashes, não credenciais em claro. Perder instalação/prova significa perder o mecanismo de recuperação anônimo; vinculação de conta fica para etapa futura.
 
-GET `/auth/me` exige `Authorization: Bearer <accessToken>` e retorna identidade técnica. Token desconhecido, expirado ou inválido: 401. Cookies, HTTP Basic e sessão do navegador não autenticam. Não registrar tokens/provas em logs ou commitá-los. Frontend 0.0.2 implementa serviços de identidade protegida e consultas HTTP; não inicia autenticação automaticamente nem envia a fila local. Validação nativa e sincronização permanecem pendentes.
+GET `/auth/me` exige `Authorization: Bearer <accessToken>` e retorna identidade técnica. Token desconhecido, expirado ou inválido: 401. Cookies, HTTP Basic e sessão do navegador não autenticam. Não registrar tokens/provas em logs ou commitá-los. Frontend 0.0.2 implementa identidade protegida e processador de fila/pull, iniciado no Capacitor com HTTPS configurado; navegador continua local. Validação em aparelho permanece pendente. Consulte [retomada](RETOMADA-PC.md).
 
 O cliente deve serializar chamadas de bootstrap, pois cada renovação revoga o token anterior. Desde 0.0.8, há limite local de 60 chamadas por endereço de conexão/janela de 60s (429 com Retry-After); cabeçalhos de endereço encaminhado não são confiados. Cookies continuam sem autenticar.
 

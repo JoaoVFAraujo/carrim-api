@@ -1,6 +1,6 @@
 # Status do Carrim
 
-## Entregas atuais em PR
+## Entregas integradas na main
 
 | Parte | Estado |
 | --- | --- |
@@ -12,9 +12,9 @@
 | Integração local | Validada com API/PostgreSQL e SQLite reais, plugins nativos substituídos no teste |
 | Android | APK debug compilado; aparelho/câmera/Keystore/SQLite nativo/atualização física pendentes |
 | Produção | Perfil com TLS verificado no banco, saúde privada, logs JSON, imagem sem root e CI preparados |
-| Publicação | Sem merge, deploy, domínio HTTPS ou release V1.0.0 |
+| Publicação | Sete PRs integrados na main; sem deploy, domínio HTTPS ou release V1.0.0 |
 
-Os PRs são dependentes e devem ser integrados na ordem: backend sync push → journal/pull → produção; mobile processador → pull/conflitos → teste integrado/Android → configuração HTTPS/CI. Estes resultados descrevem as branches das entregas, não a main publicada.
+Backend PRs #11–#13 e mobile #13–#16 foram integrados na main. CI pós-merge passou nos dois projetos. Consulte [retomada no PC](RETOMADA-PC.md) para commits, versões, evidências, divergências históricas e próximos passos (consolidado em 16/10/2026).
 
 A identidade web não persiste ao recarregar, então o navegador não sincroniza compras. Nativo exige configurar HTTPS antes do build. Conflitos preservam dados e interrompem dependentes, sem sobrescrita silenciosa; resolução assistida permanece pendente.
 

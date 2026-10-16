@@ -4,7 +4,7 @@ API do Carrim para acompanhar compras de supermercado. Este repositório e `Joao
 
 ## Estado: 0.0.8 — APIs de negócio protegidas
 
-Aplicação Spring Boot com PostgreSQL, identidade anônima e APIs protegidas de catálogo/compras. A execução exige banco e credenciais locais. Frontend 0.0.2 prepara identidade protegida e consultas HTTP; a interface ainda funciona localmente e a sincronização permanece pendente. A validação do armazenamento em aparelho e a configuração HTTPS nativa ainda precisam ser concluídas.
+Aplicação Spring Boot com PostgreSQL, identidade anônima, APIs protegidas e sincronização push idempotente/pull por proprietário integradas na main. Mobile 0.0.2 implementa processador nativo com endpoint HTTPS configurável; navegador continua local. Validação física e infraestrutura pública permanecem pendentes. Consulte [retomada no PC](docs/RETOMADA-PC.md) e [status atual](docs/STATUS-DESENVOLVIMENTO.md).
 
 ## Stack e pré-requisitos
 
@@ -28,7 +28,7 @@ No Windows, com Docker ativo para os testes:
 .\mvnw.cmd spring-boot:run
 ```
 
-A porta padrão é 8082 (`http://localhost:8082`). Qualquer rota é negada. GET sem autenticação retorna 401; uma identidade autenticada de teste também é negada, com 403. Requisições de mutação sem CSRF podem retornar 403 antes da autorização.
+A porta padrão é 8082 (`http://localhost:8082`). Bootstrap anônimo tem rota própria; APIs de negócio/sync exigem Bearer e propriedade correspondente. Consulte [API local](docs/API-LOCAL.md) para rotas e erros; descrições antigas de bloqueio total representam a fundação histórica.
 
 No IntelliJ, recarregue o projeto Maven e mantenha na configuração de execução:
 

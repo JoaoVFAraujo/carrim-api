@@ -10,7 +10,7 @@ Saúde fica em loopback, porta 9090 por padrão (MANAGEMENT_SERVER_PORT), soment
 
 Antes de produção: banco/CA e HTTPS reais; backup criptografado do PostgreSQL e teste de restauração em banco isolado; rotação/revogação de credenciais; limite de requisições no gateway (a baseline local de bootstrap não é distribuída); métricas/alertas privados; verificação de APK assinado e dispositivo real; teste de atualização preservando identidade e SQLite. Estas dependências externas continuam abertas.
 
-Ordem de PRs: sync push → journal/pull → preparação de produção. Não fazer merge ou deploy sem autorização específica.
+PRs #11, #12 e #13 integrados na main, nessa ordem. Preparação não representa deploy; publicação de infraestrutura ainda depende de autorização específica. Consulte [retomada](RETOMADA-PC.md).
 
 Validação local realizada: Maven verify com PostgreSQL isolado; imagem Docker construída e inicializada como 10001:10001 com CA pública de teste montada somente leitura. Perfil prod conectou usando sslmode=verify-full; readiness retornou UP com banco e DOWN ao interrompê-lo, depois voltou a UP. A rota de saúde na porta principal retornou 401. Certificado de teste e banco descartável não fazem parte do repositório ou da imagem. A CA deve ser legível pelo usuário 10001, sem tornar a chave privada pública.
 
