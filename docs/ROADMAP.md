@@ -60,9 +60,9 @@ O usuário apontou que a captura da revisão anterior não reproduzia a referên
 | ---------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1          | Fidelidade visual antes do APK         | Comparar composição, proporções e controles com os quatro conceitos; completar miniaturas e obter conferência visual, sem confundir testes funcionais com aprovação |
 | 2          | APK de teste e aparelho (TEST-001/005) | Após a revisão visual local: instalar preservando dados e validar câmera, teclado/leitor de tela, Keystore, SQLite, offline/online, atualização e compra real       |
-| 2          | Casos complexos de conflito            | Reconciliação explícita de compras encerradas, colisões de cadastro e importações; preservar histórico e referências, sem auto-rebase ou desbloqueio automático     |
-| 3          | Homologação segura (OPS/SEC)           | HTTPS/CORS WebView, banco/CA/segredos, backup/restauração, gateway e alertas, com autorização                                                                       |
-| 4          | Release V1.0.0                         | Acessibilidade nativa, ajuste do bundle, assinatura e distribuição após os testes físicos e aprovação                                                               |
+| 3          | Casos complexos de conflito            | Reconciliação explícita de compras encerradas, colisões de cadastro e importações; preservar histórico e referências, sem auto-rebase ou desbloqueio automático     |
+| 4          | Homologação segura (OPS/SEC)           | HTTPS/CORS WebView, banco/CA/segredos, backup/restauração, gateway e alertas, com autorização                                                                       |
+| 5          | Release V1.0.0                         | Acessibilidade nativa, ajuste do bundle, assinatura e distribuição após os testes físicos e aprovação                                                               |
 
 A revisão anterior foi funcional; a fidelidade visual foi reprovada. A correção e a conferência visual devem vir antes da preparação do APK. Aprovação no aparelho também permanece pendente. iOS depende de macOS/Xcode. Não limpar dados, substituir proprietário, alterar pedido enviado ou reativar FAILED automaticamente. Reaplicação assistida é uma nova decisão confirmada e arquivada, não reciclagem automática de uma chave idempotente.
 
