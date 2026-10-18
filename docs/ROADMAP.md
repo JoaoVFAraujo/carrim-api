@@ -4,7 +4,7 @@ Atualizado em **18/10/2026**. Fonte única de retomada: atualizar estado/priorid
 
 ## Onde paramos
 
-Base do Cloud: API 8515b48 e mobile 700bcce, consolidada com as retomadas 08f0f52/915a113. As atividades seguintes do PC são rastreadas pelos PRs mobile #18, #19 e #20. Versões técnicas permanecem 0.0.8/0.0.2; não houve release ou alteração de schema nesta sequência.
+Base do Cloud: API 8515b48 e mobile 700bcce, consolidada com as retomadas 08f0f52/915a113. As atividades seguintes do PC são rastreadas pelos PRs mobile #18 a #22 (revisão das demais telas em #22). Versões técnicas permanecem 0.0.8/0.0.2; não houve release ou alteração de schema nesta sequência.
 
 | Área           | Estado real                                                                                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -17,13 +17,13 @@ Base do Cloud: API 8515b48 e mobile 700bcce, consolidada com as retomadas 08f0f5
 | Conflitos      | Revisão assistida consulta estado atual, compara e permite reaplicação explícita em cadastros/compra ativa; casos complexos continuam pausados          |
 | Android        | APK debug compilado no Cloud/CI; aparelho, Keystore/SQLite nativos e atualização física pendentes                                                       |
 | Produção       | Perfil, TLS verificado no banco, health privado, logs JSON, imagem sem root e CI preparados; sem deploy público                                         |
-| Layout         | Fidelidade visual reprovada pelo usuário; Carrinho recomposto no mobile #21, com fotos provisórias; demais abas e aprovação visual permanecem pendentes |
+| Layout         | Após reprovação, quatro abas recompostas nos mobile #21/#22; placeholders no catálogo, conferência do usuário e aparelho pendentes |
 
 API **0.0.8**, mobile **0.0.2**, Android versionCode **2** são versões dos manifests, não release V1.0.0. Web permanece local e não sincroniza compras persistidas.
 
 ## Evidências e métricas técnicas
 
-Resultados Cloud abaixo vieram das retomadas; logs brutos e APK da sessão não estão no Git. A validação mobile foi repetida no PC em 18/10/2026: 122 testes passaram e 1 live opt-in foi pulado (24 arquivos), além de lint, formatação, SQLite real e build. O backend não teve código alterado nem seus testes repetidos nesta atividade.
+Resultados Cloud abaixo vieram das retomadas; logs brutos e APK da sessão não estão no Git. A validação mobile foi repetida no PC em 18/10/2026: 127 testes passaram e 1 live opt-in foi pulado (24 arquivos), além de lint, formatação, SQLite real e build. O backend não teve código alterado nem seus testes repetidos nesta atividade.
 
 | Verificação                         | Resultado registrado                                                                                        | Limite                                                       |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
@@ -52,13 +52,13 @@ Ao repetir, atualizar evidência com data, ambiente, commit e resultado; preserv
 
 ### Correção da avaliação visual — 18/10/2026
 
-O usuário apontou que a captura da revisão anterior não reproduzia a referência. Os testes funcionais continuam válidos, mas não representam aprovação de fidelidade. [Mobile #21](https://github.com/JoaoVFAraujo/carrim-mobile/pull/21) refaz a composição do Carrinho (resumo compacto, cartões com área de miniatura, menus e controles agrupados, ações abaixo da lista). Comparação em 320/390 px com total R$ 112,36; 125 testes locais passaram, 1 live pulado. Fotos do catálogo e fidelidade das outras três abas ainda precisam de trabalho e conferência do usuário.
+O usuário apontou que a captura da revisão anterior não reproduzia a referência. Os testes funcionais continuam válidos, mas não representam aprovação de fidelidade. [Mobile #21](https://github.com/JoaoVFAraujo/carrim-mobile/pull/21) refaz a composição do Carrinho (resumo compacto, cartões com área de miniatura, menus e controles agrupados, ações abaixo da lista). Comparação em 320/390 px com total R$ 112,36; 125 testes locais passaram, 1 live pulado. A sequência [mobile #22](https://github.com/JoaoVFAraujo/carrim-mobile/pull/22) recompõe Início, Escanear e Histórico: cesta própria sem marcas, tipografia/hierarquia, filtro em cápsula, cartões expansíveis e ficha inferior de produto. Comparação interativa em 320/390 px, navegação e itens do Histórico conferidos; 127 testes passaram, 1 live pulado, lint/formatação/SQLite/build passaram. Aviso do bundle inicial (~1,14 MB) permanece; estilos por componente abaixo de 4 kB. Fotos do catálogo e conferência visual do usuário continuam pendentes. Câmera real, teclado e acessibilidade nativa dependem de aparelho; sem APK local novo ou deploy.
 
 ## Próximas atividades
 
 | Prioridade | Entrega                                | Critério                                                                                                                                                            |
 | ---------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1          | Fidelidade visual antes do APK         | Comparar composição, proporções e controles com os quatro conceitos; completar miniaturas e obter conferência visual, sem confundir testes funcionais com aprovação |
+| 1          | Fidelidade visual antes do APK         | Comparar composição, proporções e controles com os quatro conceitos; definir fotos do catálogo e obter conferência visual, sem confundir testes funcionais com aprovação |
 | 2          | APK de teste e aparelho (TEST-001/005) | Após a revisão visual local: instalar preservando dados e validar câmera, teclado/leitor de tela, Keystore, SQLite, offline/online, atualização e compra real       |
 | 3          | Casos complexos de conflito            | Reconciliação explícita de compras encerradas, colisões de cadastro e importações; preservar histórico e referências, sem auto-rebase ou desbloqueio automático     |
 | 4          | Homologação segura (OPS/SEC)           | HTTPS/CORS WebView, banco/CA/segredos, backup/restauração, gateway e alertas, com autorização                                                                       |
