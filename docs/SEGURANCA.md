@@ -63,7 +63,7 @@ Pool prod: até 10 conexões, mínimo 2, espera de 10 s; Tomcat tem limites de c
 - Monitoramento privado de saúde, erros, latência, banco e sync, com alertas acionáveis.
 - Testes de autenticação, BOLA/IDOR, injection, payload, replay e concorrência; auditoria de dependências e segredos/artefatos.
 - Assinatura/distribuição e [roteiro Android](https://github.com/JoaoVFAraujo/carrim-mobile/blob/main/docs/VALIDACAO-ANDROID.md), incluindo atualização preservando dados.
-- Reconciliação explícita de conflitos; não desbloquear FAILED, limpar SQLite ou trocar operationId para forçar envio.
+- Reconciliação explícita de conflitos; não desbloquear FAILED, limpar SQLite ou modificar pedido/idempotency key já enviados para forçar envio. A revisão assistida arquiva pedido/estado local/remoto e, após confirmação, cria um novo comando para casos suportados. Comparação e escrita compartilham o lock SQLite; edição local durante o diálogo invalida a decisão. Casos encerrados ou não reconhecidos continuam pausados.
 - Autorização específica para infraestrutura/deploy/release.
 
 Pinning e criptografia integral de SQLite não são exigências automáticas da V1; reavaliar conforme risco. SAST/DAST, dependency/container scanning e automação de auditoria são melhorias a avaliar, não controles já comprovados. Audit datado não garante ausência de outras falhas.
