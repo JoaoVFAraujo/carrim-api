@@ -6,18 +6,18 @@ Atualizado em **18/10/2026**. Fonte única de retomada: atualizar estado/priorid
 
 Base do Cloud: API 8515b48 e mobile 700bcce, consolidada com as retomadas 08f0f52/915a113. As atividades seguintes do PC são rastreadas pelos PRs mobile #18, #19 e #20. Versões técnicas permanecem 0.0.8/0.0.2; não houve release ou alteração de schema nesta sequência.
 
-| Área           | Estado real                                                                                                                                    |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| Compra offline | Mercado, edição/remoção do limite, cancelamento confirmado, itens, peso/promoção, total, finalização e Histórico                               |
-| Catálogo       | Busca local por nome/código, preço anterior regular por mercado/data; preço de hoje obrigatório                                                |
-| Scanner        | MLKit integrado; câmera/permissões físicas pendentes                                                                                           |
-| Backend        | Domínio, ArchUnit, APIs protegidas, PostgreSQL/Flyway V1–V6, versões e finalização idempotente                                                 |
-| Identidade     | Keystore/Keychain e vínculo SQLite/dono; divergência pausa sync                                                                                |
-| Sync           | Push idempotente, journal/pull, bootstrap, reservas/retry e pedido congelado; SQLite V1–V10                                                    |
-| Conflitos      | Revisão assistida consulta estado atual, compara e permite reaplicação explícita em cadastros/compra ativa; casos complexos continuam pausados |
-| Android        | APK debug compilado no Cloud/CI; aparelho, Keystore/SQLite nativos e atualização física pendentes                                              |
-| Produção       | Perfil, TLS verificado no banco, health privado, logs JSON, imagem sem root e CI preparados; sem deploy público                                |
-| Layout         | Quatro abas e formulários revisados localmente em 320/390 px; validação e aprovação física ainda pendentes                                     |
+| Área           | Estado real                                                                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compra offline | Mercado, edição/remoção do limite, cancelamento confirmado, itens, peso/promoção, total, finalização e Histórico                                        |
+| Catálogo       | Busca local por nome/código, preço anterior regular por mercado/data; preço de hoje obrigatório                                                         |
+| Scanner        | MLKit integrado; câmera/permissões físicas pendentes                                                                                                    |
+| Backend        | Domínio, ArchUnit, APIs protegidas, PostgreSQL/Flyway V1–V6, versões e finalização idempotente                                                          |
+| Identidade     | Keystore/Keychain e vínculo SQLite/dono; divergência pausa sync                                                                                         |
+| Sync           | Push idempotente, journal/pull, bootstrap, reservas/retry e pedido congelado; SQLite V1–V10                                                             |
+| Conflitos      | Revisão assistida consulta estado atual, compara e permite reaplicação explícita em cadastros/compra ativa; casos complexos continuam pausados          |
+| Android        | APK debug compilado no Cloud/CI; aparelho, Keystore/SQLite nativos e atualização física pendentes                                                       |
+| Produção       | Perfil, TLS verificado no banco, health privado, logs JSON, imagem sem root e CI preparados; sem deploy público                                         |
+| Layout         | Fidelidade visual reprovada pelo usuário; Carrinho recomposto no mobile #21, com fotos provisórias; demais abas e aprovação visual permanecem pendentes |
 
 API **0.0.8**, mobile **0.0.2**, Android versionCode **2** são versões dos manifests, não release V1.0.0. Web permanece local e não sincroniza compras persistidas.
 
@@ -50,16 +50,21 @@ Ao repetir, atualizar evidência com data, ambiente, commit e resultado; preserv
 - [Mobile #19](https://github.com/JoaoVFAraujo/carrim-mobile/pull/19): comparar alteração local/servidor, arquivar a revisão e reaplicar somente após confirmação, com novo comando explícito. Mudança local durante o diálogo invalida a decisão. UPDATE de catálogo/limite e alterações de itens exigem dados ativos e íntegros; encerramento, cadastro conflitante e importação inválida seguem pausados.
 - [Mobile #20](https://github.com/JoaoVFAraujo/carrim-mobile/pull/20): revisão local conforme LAYOUT, com resumo compacto, nomes/totais longos, Histórico, fechamento de formulários e foco. Fluxo misto R$ 54,66, caixa R$ 55,00 e diferença R$ 0,34, persistidos após reload. Não foi gerado APK local.
 
+### Correção da avaliação visual — 18/10/2026
+
+O usuário apontou que a captura da revisão anterior não reproduzia a referência. Os testes funcionais continuam válidos, mas não representam aprovação de fidelidade. [Mobile #21](https://github.com/JoaoVFAraujo/carrim-mobile/pull/21) refaz a composição do Carrinho (resumo compacto, cartões com área de miniatura, menus e controles agrupados, ações abaixo da lista). Comparação em 320/390 px com total R$ 112,36; 125 testes locais passaram, 1 live pulado. Fotos do catálogo e fidelidade das outras três abas ainda precisam de trabalho e conferência do usuário.
+
 ## Próximas atividades
 
-| Prioridade | Entrega                                | Critério                                                                                                                                                        |
-| ---------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1          | APK de teste e aparelho (TEST-001/005) | Após a revisão visual local: instalar preservando dados e validar câmera, teclado/leitor de tela, Keystore, SQLite, offline/online, atualização e compra real   |
-| 2          | Casos complexos de conflito            | Reconciliação explícita de compras encerradas, colisões de cadastro e importações; preservar histórico e referências, sem auto-rebase ou desbloqueio automático |
-| 3          | Homologação segura (OPS/SEC)           | HTTPS/CORS WebView, banco/CA/segredos, backup/restauração, gateway e alertas, com autorização                                                                   |
-| 4          | Release V1.0.0                         | Acessibilidade nativa, ajuste do bundle, assinatura e distribuição após os testes físicos e aprovação                                                           |
+| Prioridade | Entrega                                | Critério                                                                                                                                                            |
+| ---------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1          | Fidelidade visual antes do APK         | Comparar composição, proporções e controles com os quatro conceitos; completar miniaturas e obter conferência visual, sem confundir testes funcionais com aprovação |
+| 2          | APK de teste e aparelho (TEST-001/005) | Após a revisão visual local: instalar preservando dados e validar câmera, teclado/leitor de tela, Keystore, SQLite, offline/online, atualização e compra real       |
+| 3          | Casos complexos de conflito            | Reconciliação explícita de compras encerradas, colisões de cadastro e importações; preservar histórico e referências, sem auto-rebase ou desbloqueio automático     |
+| 4          | Homologação segura (OPS/SEC)           | HTTPS/CORS WebView, banco/CA/segredos, backup/restauração, gateway e alertas, com autorização                                                                       |
+| 5          | Release V1.0.0                         | Acessibilidade nativa, ajuste do bundle, assinatura e distribuição após os testes físicos e aprovação                                                               |
 
-A revisão visual local foi autorizada e executada antes da preparação do APK. Aprovação no aparelho permanece pendente. iOS depende de macOS/Xcode. Não limpar dados, substituir proprietário, alterar pedido enviado ou reativar FAILED automaticamente. Reaplicação assistida é uma nova decisão confirmada e arquivada, não reciclagem automática de uma chave idempotente.
+A revisão anterior foi funcional; a fidelidade visual foi reprovada. A correção e a conferência visual devem vir antes da preparação do APK. Aprovação no aparelho também permanece pendente. iOS depende de macOS/Xcode. Não limpar dados, substituir proprietário, alterar pedido enviado ou reativar FAILED automaticamente. Reaplicação assistida é uma nova decisão confirmada e arquivada, não reciclagem automática de uma chave idempotente.
 
 ## Métricas de produto a validar
 
