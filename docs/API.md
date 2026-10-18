@@ -116,7 +116,7 @@ GET `/api/v1/sync/pull?cursor=...&limit=50` devolve `changes`, cursor opaco vinc
 
 Cada change tem `{aggregateType,aggregateId,snapshot}`. O cliente não interpreta cursor como autorização: só Bearer autoriza. Armazenar páginas/cursor de modo transacional, ordenar catálogo/mercados antes das compras e não substituir edição local pendente. Compras encerradas importam itens/preços sem ecoar novas operações para a fila.
 
-Conflitos de versão/estado, identidade/código colidente ou snapshot inválido pausam o fluxo correspondente preservando dados. Resolução assistida, auto-rebase e exclusão/tombstones de catálogo não estão entregues. Não limpar filas, trocar proprietário/operationId ou desbloquear FAILED automaticamente.
+Conflitos de versão/estado, identidade/código colidente ou snapshot inválido pausam o fluxo correspondente preservando dados. O mobile oferece reaplicação assistida para alterações suportadas em dados ativos, após consulta autenticada, comparação, confirmação e arquivo do pedido anterior. Auto-rebase automático, reconciliação terminal e exclusão/tombstones de catálogo não estão entregues. Não limpar filas, trocar proprietário/operationId ou desbloquear FAILED automaticamente.
 
 ## Erros e limites
 

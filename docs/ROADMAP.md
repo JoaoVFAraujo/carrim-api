@@ -1,29 +1,29 @@
 # Estado, métricas e próximos passos
 
-Consolidado em **16/10/2026**. Fonte única de retomada: atualizar estado/prioridades aqui, sem novos documentos por sessão.
+Atualizado em **18/10/2026**. Fonte única de retomada: atualizar estado/prioridades aqui, sem novos documentos por sessão.
 
 ## Onde paramos
 
-Main funcional de referência: API 8515b48, mobile 700bcce. Esta consolidação incorpora retomadas Cloud 08f0f52/915a113 e visão do PC, sem alterar funcionalidades, migrations, configurações ou versões.
+Base do Cloud: API 8515b48 e mobile 700bcce, consolidada com as retomadas 08f0f52/915a113. As atividades seguintes do PC são rastreadas pelos PRs mobile #18, #19 e #20. Versões técnicas permanecem 0.0.8/0.0.2; não houve release ou alteração de schema nesta sequência.
 
-| Área           | Estado real                                                                                                     |
-| -------------- | --------------------------------------------------------------------------------------------------------------- |
-| Compra offline | Mercado, limite inicial, itens manuais/código, peso/promoção, total, finalização e Histórico                    |
-| Catálogo       | Busca local por nome/código, preço anterior regular por mercado/data; preço de hoje obrigatório                 |
-| Scanner        | MLKit integrado; câmera/permissões físicas pendentes                                                            |
-| Backend        | Domínio, ArchUnit, APIs protegidas, PostgreSQL/Flyway V1–V6, versões e finalização idempotente                  |
-| Identidade     | Keystore/Keychain e vínculo SQLite/dono; divergência pausa sync                                                 |
-| Sync           | Push idempotente, journal/pull, bootstrap, reservas/retry e pedido congelado; SQLite V1–V10                     |
-| Conflitos      | Preserva estados e pausa dependentes; sem resolução assistida ou auto-rebase                                    |
-| Android        | APK debug compilado no Cloud/CI; aparelho, Keystore/SQLite nativos e atualização física pendentes               |
-| Produção       | Perfil, TLS verificado no banco, health privado, logs JSON, imagem sem root e CI preparados; sem deploy público |
-| Layout         | Direção e imagens versionadas; redesenho adiado e aprovação final em aparelho pendente                          |
+| Área           | Estado real                                                                                                                                    |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compra offline | Mercado, edição/remoção do limite, cancelamento confirmado, itens, peso/promoção, total, finalização e Histórico                               |
+| Catálogo       | Busca local por nome/código, preço anterior regular por mercado/data; preço de hoje obrigatório                                                |
+| Scanner        | MLKit integrado; câmera/permissões físicas pendentes                                                                                           |
+| Backend        | Domínio, ArchUnit, APIs protegidas, PostgreSQL/Flyway V1–V6, versões e finalização idempotente                                                 |
+| Identidade     | Keystore/Keychain e vínculo SQLite/dono; divergência pausa sync                                                                                |
+| Sync           | Push idempotente, journal/pull, bootstrap, reservas/retry e pedido congelado; SQLite V1–V10                                                    |
+| Conflitos      | Revisão assistida consulta estado atual, compara e permite reaplicação explícita em cadastros/compra ativa; casos complexos continuam pausados |
+| Android        | APK debug compilado no Cloud/CI; aparelho, Keystore/SQLite nativos e atualização física pendentes                                              |
+| Produção       | Perfil, TLS verificado no banco, health privado, logs JSON, imagem sem root e CI preparados; sem deploy público                                |
+| Layout         | Quatro abas e formulários revisados localmente em 320/390 px; validação e aprovação física ainda pendentes                                     |
 
 API **0.0.8**, mobile **0.0.2**, Android versionCode **2** são versões dos manifests, não release V1.0.0. Web permanece local e não sincroniza compras persistidas.
 
 ## Evidências e métricas técnicas
 
-Resultados Cloud vieram das retomadas; logs brutos e APK da sessão não estão no Git. Não foram repetidos no PC nesta consolidação documental.
+Resultados Cloud abaixo vieram das retomadas; logs brutos e APK da sessão não estão no Git. A validação mobile foi repetida no PC em 18/10/2026: 122 testes passaram e 1 live opt-in foi pulado (24 arquivos), além de lint, formatação, SQLite real e build. O backend não teve código alterado nem seus testes repetidos nesta atividade.
 
 | Verificação                         | Resultado registrado                                                                                        | Limite                                                       |
 | ----------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
@@ -44,17 +44,22 @@ Sem CARRIM_LIVE_SYNC=1, live é explicitamente pulado. Os últimos PRs e seus ch
 
 Ao repetir, atualizar evidência com data, ambiente, commit e resultado; preservar histórico no Git. Contagem de testes não é cobertura de todos os riscos.
 
+## Entregas do PC — 17–18/10/2026
+
+- [Mobile #18](https://github.com/JoaoVFAraujo/carrim-mobile/pull/18): cancelar com confirmação e definir/editar/remover limite, com SQLite/fila atômicos e testes de rollback/concorrência.
+- [Mobile #19](https://github.com/JoaoVFAraujo/carrim-mobile/pull/19): comparar alteração local/servidor, arquivar a revisão e reaplicar somente após confirmação, com novo comando explícito. Mudança local durante o diálogo invalida a decisão. UPDATE de catálogo/limite e alterações de itens exigem dados ativos e íntegros; encerramento, cadastro conflitante e importação inválida seguem pausados.
+- [Mobile #20](https://github.com/JoaoVFAraujo/carrim-mobile/pull/20): revisão local conforme LAYOUT, com resumo compacto, nomes/totais longos, Histórico, fechamento de formulários e foco. Fluxo misto R$ 54,66, caixa R$ 55,00 e diferença R$ 0,34, persistidos após reload. Não foi gerado APK local.
+
 ## Próximas atividades
 
-| Prioridade | Entrega                                | Critério                                                                                                |
-| ---------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| 1          | Resolução assistida (SYNC-009/010/011) | Mostrar local/remoto, decidir explicitamente e preservar idempotência; auto-rebase só com regras/testes |
-| 2          | Ações mobile (SHOP-004, BUDGET-002)    | Cancelar compra e editar/remover orçamento com SQLite/fila e testes; API já oferece                     |
-| 3          | Aparelho e supermercado (TEST-001/005) | Roteiro Android, offline/online, câmera, Keystore, SQLite, segundo plano e atualização                  |
-| 4          | Homologação segura (OPS/SEC)           | HTTPS, CORS/WebView, banco/CA/segredos, backup/restauração, gateway e alertas, com autorização          |
-| 5          | Polimento e release (UX, V1.0.0)       | Layout conforme referências, acessibilidade, haptics/animações úteis, bundle, assinatura e distribuição |
+| Prioridade | Entrega                                | Critério                                                                                                                                                        |
+| ---------- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1          | APK de teste e aparelho (TEST-001/005) | Após a revisão visual local: instalar preservando dados e validar câmera, teclado/leitor de tela, Keystore, SQLite, offline/online, atualização e compra real   |
+| 2          | Casos complexos de conflito            | Reconciliação explícita de compras encerradas, colisões de cadastro e importações; preservar histórico e referências, sem auto-rebase ou desbloqueio automático |
+| 3          | Homologação segura (OPS/SEC)           | HTTPS/CORS WebView, banco/CA/segredos, backup/restauração, gateway e alertas, com autorização                                                                   |
+| 4          | Release V1.0.0                         | Acessibilidade nativa, ajuste do bundle, assinatura e distribuição após os testes físicos e aprovação                                                           |
 
-Redesenho permanece adiado; versionar referências não autoriza mudar a UI agora. iOS depende de macOS/Xcode. Não limpar dados, substituir proprietário, trocar operationId ou reativar FAILED automaticamente para contornar conflitos.
+A revisão visual local foi autorizada e executada antes da preparação do APK. Aprovação no aparelho permanece pendente. iOS depende de macOS/Xcode. Não limpar dados, substituir proprietário, alterar pedido enviado ou reativar FAILED automaticamente. Reaplicação assistida é uma nova decisão confirmada e arquivada, não reciclagem automática de uma chave idempotente.
 
 ## Métricas de produto a validar
 

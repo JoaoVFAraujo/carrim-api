@@ -35,7 +35,7 @@ Exemplos: 2 × R$ 7,99 = R$ 15,98; 824 g a R$ 6,99/kg = R$ 5,76, com arredondame
 
 Agrupar repetidos somente com identidade e configuração compatíveis; outro preço fica separado. Ajuste de quantidade não renomeia o catálogo. Observações normalizadas conservam base UNIT/KG, configuração original e indicação de aproximação.
 
-Limite é opcional e não bloqueia adição. Editar/remover orçamento e cancelar existem na API, mas ainda precisam de ações no mobile. Diferença do caixa não ajusta itens automaticamente.
+Limite é opcional e não bloqueia adição. Editar/remover orçamento e cancelar com confirmação estão disponíveis na API e no mobile; SQLite e fila são alterados atomicamente, sem gerar preços no cancelamento. Diferença do caixa não ajusta itens automaticamente.
 
 ## Arquitetura
 
@@ -71,7 +71,7 @@ Catálogo usa JPA/Hibernate; compras usam JDBC com transação por comando. Arch
 3. Fila respeita ordem/dependências; congelar operationId, pedido e baseVersion antes do primeiro envio.
 4. Servidor aplica operação e recibo juntos; replay não duplica efeito. Versão divergente gera conflito.
 5. Após push, receber journal paginado, estagiar snapshots e aplicar por dependências sem sobrescrever edições locais pendentes.
-6. Conflitos pausam dependentes e mostram atenção; não há last-write-wins, resolução assistida ou auto-rebase entregue.
+6. Conflitos pausam dependentes e mostram atenção. A revisão assistida permite comparar e reaplicar explicitamente alterações suportadas em dados ativos, arquivando pedido anterior e estados comparados. Não há last-write-wins nem auto-rebase automático; casos terminais e importações complexas permanecem protegidos.
 
 Coalescência da fila continua uma otimização futura. Web não sincroniza compras persistidas porque identidade é apenas de memória. Nativo só inicia sync com endpoint HTTPS configurado.
 
