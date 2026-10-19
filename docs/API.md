@@ -19,11 +19,19 @@ Plataformas: ANDROID, IOS, WEB. Prova tem 43 caracteres; UUID/prova devem ser pr
 
 Repetir com a mesma instalação/prova mantém usuário, gera novo token e revoga o anterior. Prova divergente: 403; entrada inválida: 400. Banco guarda hashes, não credenciais em claro. Perder instalação/prova significa perder o mecanismo de recuperação anônimo; vinculação de conta fica para etapa futura.
 
-GET `/auth/me` exige `Authorization: Bearer <accessToken>` e retorna identidade técnica. Token desconhecido, expirado ou inválido: 401. Cookies, HTTP Basic e sessão do navegador não autenticam. Não registrar tokens/provas em logs ou commitá-los. Mobile usa identidade protegida e processador de fila/pull no Capacitor com HTTPS configurado; navegador continua local e identidade web é efêmera.
+GET `/auth/me` exige `Authorization: Bearer <accessToken>` e retorna identidade técnica. Token desconhecido, expirado ou inválido: 401. Cookies, HTTP Basic e sessão do navegador não autenticam. Não registrar tokens/provas em logs ou commitá-los. Nativo usa identidade protegida e processador de fila/pull com HTTPS configurado. Navegador usa os mesmos contratos de negócio e sincronização com o bootstrap protegido abaixo.
 
 O cliente deve serializar chamadas de bootstrap, pois cada renovação revoga o token anterior. Desde 0.0.8, há limite local de 60 chamadas por endereço de conexão/janela de 60s (429 com Retry-After); cabeçalhos de endereço encaminhado não são confiados. Cookies continuam sem autenticar.
 
 Variações de URL aceitas como o mesmo endpoint após normalização compartilham o limite de chamadas. O filtro usa o mesmo matcher da regra de autorização; o firewall padrão continua rejeitando URLs que considera inseguras.
+
+## Identidade no navegador
+
+Web exige API na mesma origem do frontend. POST `/auth/web/prepare`, com `X-Carrim-Web: 1` e JSON `{installationId: UUID-ou-null}`, valida ou prepara a prova HttpOnly e retorna somente installationId. O cliente recebe/persiste o cookie antes de POST `/auth/web/token`, com o mesmo cabeçalho e `{installationId: UUID}`. Token retorna o contrato IssuedIdentity acima, sem a prova; Bearer fica exclusivamente em memória. Renovação preserva proprietário e revoga o token anterior.
+
+Cookie HTTPS: `__Host-carrim_web_identity`, Secure, HttpOnly, SameSite=Strict, Path=/, sem Domain, validade de 365 dias. HTTP só é permitido fora de prod em host e conexão loopback, usando cookie local separado e Path=/api/v1/auth/web. Cookies não autenticam rotas de negócio. Cookie ausente num banco vinculado, identidade divergente ou cookie malformado pausam sync; não apagar o vínculo para forçar recuperação.
+
+Bootstrap web recusa Fetch Metadata de outra origem, Origin incompatível, cabeçalho customizado ausente/duplicado e HTTP não local; prod exige HTTPS mesmo em loopback. Não habilitar CORS para esses endpoints. Os três bootstraps compartilham o limite por IP. Respostas usam no-store; rejeições 401/403/409 não ecoam prova ou token. Em produção, o proxy preserva Host/origem pública e resolve HTTPS por encaminhamento confiável; cabeçalhos externos precisam ser removidos pelo gateway.
 
 ## Negócio
 
