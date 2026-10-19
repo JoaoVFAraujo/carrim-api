@@ -9,13 +9,16 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.OrRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /** Local baseline; source address comes from the connection, never an untrusted forwarded header. */
 final class BootstrapRateFilter extends OncePerRequestFilter {
-    static final RequestMatcher ROUTE =
-            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/v1/auth/anonymous");
+    static final RequestMatcher ROUTE = new OrRequestMatcher(
+            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/v1/auth/anonymous"),
+            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/v1/auth/web/prepare"),
+            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/api/v1/auth/web/token"));
     private static final long WINDOW = 60_000_000_000L;
     private final Map<String, Bucket> buckets = new HashMap<>();
 

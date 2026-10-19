@@ -67,13 +67,15 @@ Catálogo usa JPA/Hibernate; compras usam JDBC com transação por comando. Arch
 ## Offline e sincronização
 
 1. Mutação local e entrada da fila são atômicas; sincronizar não é condição para comprar.
-2. No nativo, confirmar credenciais e vínculo SQLite/proprietário antes do envio. Divergência ou perda de identidade bloqueia sync e preserva dados.
+2. Confirmar identidade persistente e vínculo SQLite/proprietário antes do envio. Divergência ou perda de identidade bloqueia sync e preserva dados.
 3. Fila respeita ordem/dependências; congelar operationId, pedido e baseVersion antes do primeiro envio.
 4. Servidor aplica operação e recibo juntos; replay não duplica efeito. Versão divergente gera conflito.
 5. Após push, receber journal paginado, estagiar snapshots e aplicar por dependências sem sobrescrever edições locais pendentes.
 6. Conflitos pausam dependentes e mostram atenção. A revisão assistida permite comparar e reaplicar explicitamente alterações suportadas em dados ativos, arquivando pedido anterior e estados comparados. Não há last-write-wins nem auto-rebase automático; casos terminais e importações complexas permanecem protegidos.
 
-Coalescência da fila continua uma otimização futura. Web não sincroniza compras persistidas porque identidade é apenas de memória. Nativo só inicia sync com endpoint HTTPS configurado.
+Navegador e nativo sincronizam mercados, produtos, compras, itens e preços. Web usa API na mesma origem, prova em cookie HttpOnly e token em memória; o nativo usa Keystore/Keychain e endpoint HTTPS configurado. Escritas despertam o envio; o processador também verifica a fila e o journal a cada dois segundos enquanto o app está aberto. Offline ou API indisponível mantém pendências persistidas. Web Locks limita o banco web a uma aba por origem, evitando cópias concorrentes do IndexedDB. Coalescência continua uma otimização futura.
+
+Os schemas não são espelhos físicos: histórico de preços é derivado da finalização, e filas, recibos, cursores e vínculos têm funções próprias em cada ambiente. Todas as informações de negócio locais têm representação no servidor; segredos e controles internos não são enviados como tabelas de usuário. Consultas de tela usam o cache local atualizado pelo pull.
 
 ## Manutenção
 

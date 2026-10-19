@@ -8,7 +8,7 @@ Dispositivo, rede e entradas remotas não são confiáveis. UUID, campo escondid
 
 | Implementado                      | Limite ou condição                                                     |
 | --------------------------------- | ---------------------------------------------------------------------- |
-| Negação por padrão e allowlist    | Só bootstrap anônimo é público na API de negócio                       |
+| Negação por padrão e allowlist    | Só bootstraps explícitos são públicos na API de negócio                |
 | Bearer opaco validado localmente  | Expira em 30 dias; não é JWT nem exige segredo de assinatura           |
 | Prova de instalação de 32 bytes   | UUID sozinho não recupera usuário; servidor guarda hashes              |
 | Propriedade derivada do Bearer    | Validação de dono; UUID alheio retorna 404                             |
@@ -19,12 +19,12 @@ Dispositivo, rede e entradas remotas não são confiáveis. UUID, campo escondid
 | Erros sanitizados                 | Sem SQL, stack trace, segredos ou valores rejeitados                   |
 | Perfil prod e health privado      | Exigem rede/configuração abaixo                                        |
 
-API usa Bearer sem sessão/cookie/Basic/login por formulário. CSRF é desabilitado somente na cadeia /api/v1/** desse modelo; rotas externas mantêm CSRF e acesso fechado. Adicionar cookies exige revisão. Limiter compartilha matcher normalizado da autorização e ignora IP encaminhado não confiável.
+Rotas de negócio usam Bearer sem sessão/cookie/Basic/login por formulário. O cookie de prova web é aceito exclusivamente nos bootstraps web, protegidos por cabeçalho customizado, Origin/Fetch Metadata, SameSite=Strict e ausência de CORS; não autentica compras ou catálogo. HTTPS usa prefixo __Host-, Secure e host exclusivo. CSRF é desabilitado somente na cadeia /api/v1/** desse modelo; rotas externas mantêm CSRF e acesso fechado. Adicionar cookies exige revisão. Limiter compartilha matcher normalizado da autorização e ignora IP encaminhado não confiável.
 
 ## Mobile e privacidade
 
 - Android: secure-storage cifra credenciais com chave no Keystore. iOS: Keychain sem iCloud, acesso no aparelho desbloqueado e sem migração entre aparelhos. Validação física pendente.
-- Nunca guardar token/prova no bundle, Git, SQLite comum, Web Storage, screenshots ou logs. Não chamar fallback web em texto aberto do plugin: navegador usa memória.
+- Nunca guardar token/prova no bundle, Git, SQLite comum, Web Storage, screenshots ou logs. Não chamar fallback web em texto aberto do plugin: o navegador mantém somente o Bearer em memória; a prova persistente vem do cookie HttpOnly preparado pelo servidor.
 - Salvar prova antes do bootstrap, validar resposta e serializar renovação, inclusive após 401 durante leitura do cache. Renovação revoga token anterior. Falha de armazenamento bloqueia conexão, sem fallback ou troca silenciosa de usuário.
 - SQLite guarda somente installationId/userId no vínculo sync_owner. Ausência, corrupção ou divergência de credenciais num banco vinculado pausa sync.
 - HTTP dedicado restringe destino, omite cookies e bloqueia redirects/cache, com timeout. Após 401, renova no máximo uma vez; retry de sync conserva pedido idempotente.
@@ -35,6 +35,8 @@ API usa Bearer sem sessão/cookie/Basic/login por formulário. CSRF é desabilit
 - Esta consolidação não implanta telemetria. Antes de coletar, definir finalidade, minimização, acesso e retenção. Compras detalhadas não são logs técnicos.
 
 ## Desenvolvimento
+
+Navegador mantém SQLite e identidade por origem; usar Web Locks para impedir gravações concorrentes de abas. Perda do cookie não autoriza substituir proprietário, limpar fila ou reenviar dados sob outra identidade.
 
 Frontend 4202 usa proxy /api/v1/** para 127.0.0.1:8082, sem abrir CORS. HTTP só local; restringir servidores à máquina. Não publicar portas, dumps ou credenciais de teste.
 
@@ -51,7 +53,7 @@ Ainda sem deploy nesta retomada. Não conectar banco remoto ou publicar infraest
 5. Health em loopback:9090 (ou MANAGEMENT_SERVER_PORT), somente health/liveness/readiness sem detalhes. Readiness inclui banco. Porta principal nega health; monitorar no mesmo host/namespace sem publicar gerenciamento.
 6. Logs JSON no prod sem Authorization, prova, token, senha, connection string privada ou payload completo. Diagnóstico com código sanitizado e IDs necessários.
 7. Configurar gateway/rate limit por IP/identidade/rota, concorrência/timeouts e alertas privados. CDN/WAF não substituem autorização nem eliminam DDoS.
-8. Para chamadas web/WebView de outra origem, configurar/testar allowlist CORS mínima em homologação. Código atual não fornece CORS amplo. Ajustar CSP aos hosts reais sem liberar scripts/conexões indiscriminadamente.
+8. Web exige /api/v1 na mesma origem, com proxy preservando Host/origem pública e HTTPS resolvido por encaminhamento confiável (por exemplo, server.forward-headers-strategy=framework atrás de gateway restrito que remove cabeçalhos externos). Perfil prod recusa bootstrap web em HTTP. Não abrir CORS nos bootstraps web. Para WebView nativa de outra origem, configurar/testar allowlist mínima somente nas rotas necessárias. Código atual não fornece CORS amplo. Ajustar CSP aos hosts reais sem liberar scripts/conexões indiscriminadamente.
 9. Validar backend HTTPS antes de configurar mobile. O endpoint público não pode conter segredo; geração descrita no README mobile.
 
 Pool prod: até 10 conexões, mínimo 2, espera de 10 s; Tomcat tem limites de conexões/threads. Revalidar capacidade com carga real antes de definir SLOs.

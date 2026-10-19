@@ -1,7 +1,9 @@
 param(
     [string]$PostgresBin = 'C:\Program Files\PostgreSQL\18\bin',
     [string]$JavaHome = 'C:\Program Files\Java\jdk-25.0.4.1',
-    [string[]]$MavenGoals = @('verify')
+    [string[]]$MavenGoals = @('verify'),
+    [switch]$MobileSync,
+    [string]$MobileRoot = 'C:\workspace\frontend\mercado'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -18,10 +20,11 @@ $listener.Start()
 $testPort = $listener.LocalEndpoint.Port
 $listener.Stop()
 $previous = @{}
-foreach ($key in @('JAVA_HOME', 'PATH', 'MAVEN_USER_HOME', 'CARRIM_TEST_DATABASE_URL')) {
+foreach ($key in @('JAVA_HOME', 'PATH', 'MAVEN_USER_HOME', 'CARRIM_TEST_DATABASE_URL', 'CARRIM_LIVE_API', 'CARRIM_LIVE_SYNC')) {
     $previous[$key] = [Environment]::GetEnvironmentVariable($key)
 }
 $running = $false
+$apiProcess = $null
 Push-Location $projectRoot
 try {
     $init = Start-Process -FilePath (Join-Path $PostgresBin 'initdb.exe') -ArgumentList @(
@@ -42,7 +45,34 @@ try {
     $env:CARRIM_TEST_DATABASE_URL = "jdbc:postgresql://127.0.0.1:$testPort/carrim_test"
     & .\mvnw.cmd -B -ntp "-Dmaven.repo.local=$projectRoot\target\maven-repository" @MavenGoals
     if ($LASTEXITCODE -ne 0) { throw 'Maven validation failed' }
+    if ($MobileSync) {
+        $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, 0)
+        $listener.Start()
+        $apiPort = $listener.LocalEndpoint.Port
+        $listener.Stop()
+        $apiProcess = Start-Process -FilePath (Join-Path $JavaHome 'bin\java.exe') -ArgumentList @(
+            '-jar', "`"$projectRoot\target\carrim-api-0.0.8.jar`"", "--server.port=$apiPort", '--server.address=127.0.0.1',
+            "--spring.datasource.url=$env:CARRIM_TEST_DATABASE_URL", '--spring.datasource.username=carrim_test', '--spring.datasource.password='
+        ) -WindowStyle Hidden -PassThru -RedirectStandardOutput "$cluster-api.log" -RedirectStandardError "$cluster-api-error.log"
+        $env:CARRIM_LIVE_API = "http://127.0.0.1:$apiPort"
+        $env:CARRIM_LIVE_SYNC = '1'
+        $ready = $false
+        $deadline = [DateTime]::UtcNow.AddSeconds(60)
+        while (-not $ready -and [DateTime]::UtcNow -lt $deadline) {
+            if ($apiProcess.HasExited) { throw "Isolated API exited; see $cluster-api-error.log" }
+            try { $null = Invoke-WebRequest "$env:CARRIM_LIVE_API/api/v1/products" -TimeoutSec 2 }
+            catch { $ready = $_.Exception.Response.StatusCode.value__ -eq 401 }
+            if (-not $ready) { Start-Sleep -Milliseconds 250 }
+        }
+        if (-not $ready) { throw 'Isolated API readiness timeout' }
+        Push-Location $MobileRoot
+        try {
+            & npm.cmd test
+            if ($LASTEXITCODE -ne 0) { throw 'Mobile live integration failed' }
+        } finally { Pop-Location }
+    }
 } finally {
+    if ($apiProcess -and -not $apiProcess.HasExited) { Stop-Process -Id $apiProcess.Id -Force; $apiProcess.WaitForExit() }
     if ($running) {
         $stop = Start-Process -FilePath (Join-Path $PostgresBin 'pg_ctl.exe') -ArgumentList @(
             'stop', '-D', "`"$cluster`"", '-m', 'fast', '-w'

@@ -2,7 +2,7 @@
 
 Backend do Carrim, aplicativo de supermercado offline-first. Mobile: [carrim-mobile](https://github.com/JoaoVFAraujo/carrim-mobile).
 
-Manifest **0.0.8**, com APIs protegidas e sync push/pull integrados. Não representa release V1.0.0 ou produção pública.
+Manifest **0.0.8**, com APIs protegidas e sync push/pull integrados para navegador e app nativo. Não representa release V1.0.0 ou produção pública.
 
 ## Documentação essencial
 
@@ -59,7 +59,9 @@ Spotless e ArchUnit fazem parte de verify. Correção de formatação: `mvnw spo
 java -jar target/carrim-api-0.0.8.jar
 ```
 
-Para o teste integrado do mobile, iniciar API em 8082 com **banco local isolado**. Esse teste cria dados e não prepara o PostgreSQL sozinho. Nunca usar dados pessoais ou produção.
+Para validar o mobile junto, usar `.\scripts\verify-local-postgres.ps1 -MobileSync` (ajustar `-MobileRoot` se necessário). O mesmo cluster isolado recebe uma API temporária em loopback; o script executa testes HTTP web/nativo e encerra somente esses processos. Sem -MobileSync, permanece a validação exclusiva do backend. Nunca usar dados pessoais ou produção.
+
+Web: servir `/api/v1` pela mesma origem do frontend. Os POSTs `/auth/web/prepare` e `/auth/web/token` mantêm a prova da instalação em cookie HttpOnly e devolvem Bearer para memória. Rotas de negócio continuam exigindo Bearer e ignorando cookies. No perfil prod, bootstrap web exige HTTPS; o proxy confiável deve preservar a origem pública e informar o esquema corretamente. Não confiar em cabeçalhos encaminhados de clientes externos.
 
 CI em [.github/workflows/verify.yml](.github/workflows/verify.yml) executa verify com Java 25 e banco descartável. Não publica infraestrutura. Perfil prod e imagem Docker exigem os controles de [Segurança](docs/SEGURANCA.md).
 
