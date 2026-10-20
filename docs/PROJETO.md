@@ -41,14 +41,15 @@ Limite é opcional e não bloqueia adição. Editar/remover orçamento e cancela
 
 Dois repositórios, um produto: carrim-mobile (appId br.com.carrim) e carrim-api (namespace br.com.carrim). Sem microsserviços ou camadas adicionais sem benefício real.
 
-| Mobile                     | Responsabilidade                                     |
-| -------------------------- | ---------------------------------------------------- |
-| Angular standalone + Ionic | Navegação e componentes; HTML separado do TypeScript |
-| Signals                    | Estado concreto; RxJS onde necessário                |
-| Tailwind tw:               | Utilitários após componentes/APIs Ionic e Angular    |
-| SQLite e migrations        | Fonte local; constraints e transações                |
-| Capacitor + MLKit          | Recursos nativos e scanner                           |
-| Serviços de sync           | Identidade, fila, transporte, pull e atenção         |
+| Mobile                     | Responsabilidade                                               |
+| -------------------------- | -------------------------------------------------------------- |
+| Angular standalone + Ionic | Navegação e componentes; HTML separado do TypeScript           |
+| Signals e Store            | Estado, validações e ordenação das ações; RxJS onde necessário |
+| ShoppingRepository         | SQL e transações SQLite de compras/itens/preços com a fila     |
+| Tailwind tw:               | Utilitários após componentes/APIs Ionic e Angular              |
+| SQLite e migrations        | Fonte local; constraints e transações                          |
+| Capacitor + MLKit          | Recursos nativos e scanner                                     |
+| Serviços de sync           | Identidade, fila, transporte, pull e atenção                   |
 
 Navegador usa jeep-sqlite/sql.js em IndexedDB por origem (host/porta); trocar origem não transfere dados. Aparelho usa SQLite nativo. UI e acessibilidade ficam no [layout](https://github.com/JoaoVFAraujo/carrim-mobile/blob/main/docs/LAYOUT.md).
 
@@ -73,7 +74,7 @@ Catálogo usa JPA/Hibernate; compras usam JDBC com transação por comando. Arch
 5. Após push, receber journal paginado, estagiar snapshots e aplicar por dependências sem sobrescrever edições locais pendentes.
 6. Conflitos pausam dependentes e mostram atenção. A revisão assistida permite comparar e reaplicar explicitamente alterações suportadas em dados ativos, arquivando pedido anterior e estados comparados. Não há last-write-wins nem auto-rebase automático; casos terminais e importações complexas permanecem protegidos.
 
-Navegador e nativo sincronizam mercados, produtos, compras, itens e preços. Web usa API na mesma origem, prova em cookie HttpOnly e token em memória; o nativo usa Keystore/Keychain e endpoint HTTPS configurado. Escritas despertam o envio; o processador também verifica a fila e o journal a cada dois segundos enquanto o app está aberto. Offline ou API indisponível mantém pendências persistidas. Web Locks limita o banco web a uma aba por origem, evitando cópias concorrentes do IndexedDB. Coalescência continua uma otimização futura.
+Navegador e nativo sincronizam mercados, produtos, compras, itens e preços. Web usa API na mesma origem, prova em cookie HttpOnly e token em memória; o nativo usa Keystore/Keychain e endpoint HTTPS configurado. Escritas despertam o envio imediatamente. SyncSchedulerService usa um timer e consultas ociosas em 15/30/60 segundos; atividade recebida reinicia o intervalo. Foco, retorno ao app e retorno da conexão despertam trabalho, respeitando next_attempt_at_ms e leases persistidos. Sem rede, não mantém polling. FAILED e importações pausadas aguardam revisão, sem desbloqueio automático. Documento oculto ou app nativo inativo pausa novos envios e novas páginas; uma requisição já em andamento pode concluir e salvar a confirmação. Retomar o primeiro plano volta a processar as pendências. Offline ou API indisponível mantém pendências persistidas. Web Locks limita o banco web a uma aba por origem, evitando cópias concorrentes do IndexedDB. Coalescência continua uma otimização futura.
 
 Os schemas não são espelhos físicos: histórico de preços é derivado da finalização, e filas, recibos, cursores e vínculos têm funções próprias em cada ambiente. Todas as informações de negócio locais têm representação no servidor; segredos e controles internos não são enviados como tabelas de usuário. Consultas de tela usam o cache local atualizado pelo pull.
 
