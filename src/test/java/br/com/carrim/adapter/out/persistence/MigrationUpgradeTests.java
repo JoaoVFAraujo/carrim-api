@@ -72,4 +72,71 @@ class MigrationUpgradeTests extends PostgresTestSupport {
             assertEquals(0, result.getLong(3));
         }
     }
+
+    @Test
+    void v7PreservesExistingV6BusinessDataAndDoesNotBackfillJournal() throws Exception {
+        String originalUrl;
+        try (var connection = dataSource.getConnection()) {
+            originalUrl = connection.getMetaData().getURL();
+        }
+        if (!originalUrl.matches("jdbc:postgresql://[^/]+/carrim_test(?:\\?.*)?"))
+            throw new IllegalStateException("Isolated carrim_test required");
+        String database = "photos_upgrade_" + UUID.randomUUID().toString().replace("-", "");
+        jdbc.execute("CREATE DATABASE " + database);
+        String url = originalUrl.replace("/carrim_test", "/" + database);
+        String user = environment.getProperty("spring.datasource.username"),
+                password = environment.getProperty("spring.datasource.password");
+        Flyway.configure()
+                .dataSource(url, user, password)
+                .schemas("carrim")
+                .defaultSchema("carrim")
+                .target("6")
+                .load()
+                .migrate();
+        UUID owner = UUID.randomUUID(), product = UUID.randomUUID();
+        long journal;
+        try (var connection = DriverManager.getConnection(url, user, password)) {
+            try (var insert =
+                    connection.prepareStatement("INSERT INTO carrim.users(id,account_type) VALUES (?,'ANONYMOUS')")) {
+                insert.setObject(1, owner);
+                insert.executeUpdate();
+            }
+            try (var insert = connection.prepareStatement(
+                    "INSERT INTO carrim.products(id,user_id,name,barcode,measurement_type) VALUES (?,?,'Original photo-less product','0789600112233','UNIT')")) {
+                insert.setObject(1, product);
+                insert.setObject(2, owner);
+                insert.executeUpdate();
+            }
+            try (var statement = connection.createStatement();
+                    var result = statement.executeQuery("SELECT count(*) FROM carrim.sync_changes")) {
+                result.next();
+                journal = result.getLong(1);
+            }
+        }
+        var upgrade = Flyway.configure()
+                .dataSource(url, user, password)
+                .schemas("carrim")
+                .defaultSchema("carrim")
+                .target("7")
+                .load();
+        assertEquals(1, upgrade.migrate().migrationsExecuted);
+        assertEquals(0, upgrade.migrate().migrationsExecuted);
+        try (var connection = DriverManager.getConnection(url, user, password);
+                var statement = connection.createStatement()) {
+            try (var result = statement.executeQuery("SELECT name,barcode,version FROM carrim.products")) {
+                assertTrue(result.next());
+                assertEquals("Original photo-less product", result.getString(1));
+                assertEquals("0789600112233", result.getString(2));
+                assertEquals(0, result.getLong(3));
+            }
+            try (var result = statement.executeQuery("SELECT count(*) FROM carrim.product_photos")) {
+                result.next();
+                assertEquals(0, result.getLong(1));
+            }
+            try (var result = statement.executeQuery("SELECT count(*) FROM carrim.sync_changes")) {
+                result.next();
+                assertEquals(journal, result.getLong(1));
+            }
+        }
+    }
 }

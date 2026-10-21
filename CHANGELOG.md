@@ -1,5 +1,12 @@
 # Changelog
 
+## Não lançado — fotos com aprovação em 21/10/2026
+
+- PostgreSQL V7 e SQLite 011: foto limitada, preferência versionada e fila de mídia separada, com upload idempotente, remoção e recuperação após falhas sem bloquear compras. Foto própria persiste offline e no servidor; item manual sem código também é suportado.
+- Fotos USER são candidatas PENDING: visíveis ao autor, públicas para outros clientes somente depois de APPROVED. Painel mínimo de aprovação/retirada com chave administrativa separada, decisões versionadas e auditoria; substituição pendente mantém a imagem pública anterior.
+- JPEG/PNG reais, cotas, limites de bytes/pixels/concorrência, normalização sem EXIF e importação externa limitada. Scanner/Carrinho usam miniaturas contidas; câmera/galeria, prévia e restauração explícita do catálogo.
+- Validação: 164 testes backend, 244 frontend em 35 arquivos com integração real isolada nos modos web/nativo, qualidade/SQLite/builds aprovados. Upload próprio, importação real Open Food Facts e aprovação administrativa conferidos na interface e no PostgreSQL isolado; falha temporária de conexão com o CDN recuperou após reinício, sem relaxar TLS. Fotos contidas no Carrinho. Recuperação de imagem pública retirada corrigida, validada na rodada completa e revisada sem apontamentos pendentes; outra identidade confirmou acesso somente à contribuição aprovada. Prévias alta/larga/quadrada, cancelamento e fotos após reload conferidos. PRs/revisão/CI, merge e APK pendentes; sem incremento de versão, release ou deploy.
+
 ## Não lançado — catálogo automático em 20/10/2026
 
 - Consulta autenticada somente leitura por código, com catálogo pessoal e sugestões Open Food Facts v3, cache limitado, orçamento de chamadas e ativação externa desabilitada por padrão em prod. Scanner confirma preço e grava pelo sync existente; foto opcional sem persistência offline.

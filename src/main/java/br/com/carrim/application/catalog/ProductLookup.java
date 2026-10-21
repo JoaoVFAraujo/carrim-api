@@ -24,6 +24,7 @@ public record ProductLookup(
 
     public enum Source {
         PERSONAL,
+        CARRIM_APPROVED,
         OPEN_FOOD_FACTS
     }
 
