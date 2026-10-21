@@ -33,3 +33,7 @@ logging:
   structured:
     format:
       console: logstash
+
+carrim:
+  catalog:
+    external-enabled: ${CARRIM_CATALOG_EXTERNAL_ENABLED:false}

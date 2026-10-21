@@ -69,3 +69,15 @@ Pool prod: até 10 conexões, mínimo 2, espera de 10 s; Tomcat tem limites de c
 - Autorização específica para infraestrutura/deploy/release.
 
 Pinning e criptografia integral de SQLite não são exigências automáticas da V1; reavaliar conforme risco. SAST/DAST, dependency/container scanning e automação de auditoria são melhorias a avaliar, não controles já comprovados. Audit datado não garante ausência de outras falhas.
+
+## Catálogo externo por código de barras
+
+Open Food Facts é acessado somente pelo servidor em destino HTTPS fixo, com User-Agent público do Carrim, sem Bearer, cookies, identidade, localização, compra ou preço do usuário. Código é validado antes do acesso. A resposta é não confiável: campos limitados, controles removidos, código conferido, imagem restrita à origem images.openfoodfacts.org e caminhos de produtos. Não existe proxy de imagens ou URL arbitrária recebida do cliente. Timeout inclui corpo e há limite de bytes; 404 representa ausência e falha temporária não é cache negativo.
+
+Somente respostas públicas do fornecedor entram no cache compartilhado. Dados privados são consultados por proprietário antes do cache, sem reutilização entre instalações. O cache é limitado e volátil, não é uma base pública de cadastros dos usuários. A confirmação continua usando SQLite/fila e sync existentes; consulta não grava dados de negócio.
+
+A foto é opcional e carregada diretamente do domínio permitido pelo app, com referrerpolicy=no-referrer e sem tokens do Carrim. O fornecedor de imagem ainda recebe IP e metadados normais da conexão; registrar esse tratamento no aviso de privacidade antes da publicação. Não há download persistente de fotos; falha/offline usa placeholder, mantendo o reconhecimento por nome/código.
+
+Licenças: base [ODbL](https://opendatacommons.org/licenses/odbl/1-0/), conteúdos [DbCL](https://opendatacommons.org/licenses/dbcl/1-0/), imagens [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/). A ficha e o scanner identificam Open Food Facts e licenças; imagem não é editada. A confirmação de um nome não elimina obrigações sobre extrações repetidas/base derivada. Antes de uso público, revisar atribuição persistente, exportação/redistribuição e obrigações share-alike; não publicar dados privados para cumprir licença nem considerar a separação do cache uma dispensa automática. Referência: [licenças oficiais](https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/tutorials/license-be-on-the-legal-side/).
+
+Produção mantém a fonte externa desabilitada por padrão. Habilitar somente após homologação HTTPS, avaliação de cobertura, adequação da privacidade/licenças e capacidade. Cache e orçamento são por processo: uma réplica enquanto habilitado, ou coordenação dos limites entre réplicas e serviços que compartilham IP antes de escalar. Orçamento de 10/min reserva margem ao limite oficial consultado; revalidar regras do fornecedor antes de habilitar. Não ativar retries ilimitados nem buscar a cada frame/tecla. Falha/limite sempre oferece cadastro manual.

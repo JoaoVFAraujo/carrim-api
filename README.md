@@ -18,6 +18,8 @@ Manifest **0.0.8**, com APIs protegidas e sync push/pull integrados para navegad
 
 Ao retomar, ler este README, AGENTS.md e roadmap. Atualizar o documento do assunto alterado; não criar registros por sessão nem copiar status entre arquivos. Histórico fica no Git.
 
+Consulta autenticada de sugestões por código: `GET /api/v1/products/lookup/{code}`. Fonte externa Open Food Facts com cache e limites; nenhuma gravação na consulta. Em prod, fonte externa desabilitada por padrão até homologação/licenças. Contrato e configuração em [API](docs/API.md) e [Segurança](docs/SEGURANCA.md).
+
 ## Executar localmente
 
 JDK 25 completo, PostgreSQL 18 e Maven Wrapper incluído. API na porta 8082, frontend na 4202. O banco local `carrim` deve existir. Configure no ambiente ou na execução do IntelliJ:

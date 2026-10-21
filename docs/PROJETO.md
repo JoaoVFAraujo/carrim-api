@@ -83,3 +83,11 @@ Os schemas não são espelhos físicos: histórico de preços é derivado da fin
 Testar dinheiro, migrações preservando dados, rollback, imutabilidade, propriedade, replay e concorrência. Registrar ambiente/limites: CI não equivale a teste físico. Consultar código/testes em vez de duplicar SQL e árvores completas em Markdown.
 
 Documento-base e retomadas foram incorporados aos guias essenciais. Textos completos anteriores permanecem no Git (backend 08f0f52, mobile 915a113); pasta original do PC preservada. O exemplo antigo do PC de autenticação somente por UUID foi substituído pelo contrato com prova da instalação, sem regredir o código.
+
+## Reconhecimento assistido de produtos
+
+O scanner busca primeiro no catálogo SQLite. Quando desconhecido, consulta o backend autenticado, que procura o catálogo pessoal e depois o Open Food Facts. Resultado externo sugere nome, marca, conteúdo e foto opcional; usuário confirma a embalagem, pode editar o nome e deve informar o preço de hoje e a quantidade. Conteúdo como 395 g descreve a embalagem e não define o peso/quantidade do item. Produtos pessoais vendidos por peso são encaminhados ao formulário apropriado do Carrinho.
+
+A consulta é somente leitura. Confirmar salva produto/item e fila atomicamente, mantendo sync para PostgreSQL e leitura offline posterior. Nome/código confirmado ficam disponíveis offline; fotos externas não são persistidas. Dados pessoais recebidos durante uma busca têm preferência sobre a sugestão externa. Produto já existente no servidor aguarda chegar ao SQLite antes de confirmar para não gerar CREATE com outra identidade. Falhas, ausência ou limite permitem cadastro manual; sair/cadastrar sem esperar invalida a resposta atrasada.
+
+A fonte cobre alimentos, sem garantia de catálogo completo. Não inclui análise nutricional, consulta de preços atuais, cópia do Desrotulando, contribuição automática a bases externas ou compartilhamento de cadastros privados. Contrato em API, licença e ativação pública em Segurança.
