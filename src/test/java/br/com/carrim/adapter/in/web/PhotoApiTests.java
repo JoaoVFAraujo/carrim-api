@@ -244,6 +244,117 @@ class PhotoApiTests extends PostgresTestSupport {
         }
     }
 
+    UUID manualItem(IssuedIdentity owner) {
+        UUID market = UUID.randomUUID(), session = UUID.randomUUID(), item = UUID.randomUUID();
+        jdbc.update(
+                "INSERT INTO carrim.supermarkets(id,user_id,name) VALUES (?,?,?)", market, owner.userId(), "Market");
+        jdbc.update(
+                "INSERT INTO carrim.shopping_sessions(id,user_id,supermarket_id,status,started_at) VALUES (?,?,?,'ACTIVE',clock_timestamp())",
+                session,
+                owner.userId(),
+                market);
+        jdbc.update(
+                "INSERT INTO carrim.shopping_items(id,user_id,session_id,product_name_snapshot,measurement_type,pricing_type,reference_price_cents,quantity,position) VALUES (?,?,?,'Manual','UNIT','REGULAR',100,1,0)",
+                item,
+                owner.userId(),
+                session);
+        return item;
+    }
+
+    void rejectedBinding(IssuedIdentity owner, UUID photo, String code, UUID item, Long version) throws Exception {
+        var body = new HashMap<String, Object>();
+        body.put("barcode", code);
+        body.put("itemId", item);
+        body.put("photoId", photo);
+        body.put("hidden", false);
+        body.put("version", version);
+        mvc.perform(put("/api/v1/products/photos/preferences/" + (code != null ? "barcode-" + code : "item-" + item))
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(body)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void ownPhotosCannotBeBoundToAnotherBarcodeOrManualItem() throws Exception {
+        var owner = actor();
+        product(owner);
+        String otherCode = "7898080643193";
+        catalog.createProduct(owner.userId(), new Product(UUID.randomUUID(), "Other", otherCode, MeasurementType.UNIT));
+        UUID codePhoto = UUID.randomUUID(), itemPhoto = UUID.randomUUID(), item = manualItem(owner);
+        upload(owner, codePhoto);
+        bind(owner, codePhoto, null);
+        byte[] image = new br.com.carrim.adapter.out.catalog.PhotoImageCodec().normalize(raster(), "image/png");
+        photos.create(owner.userId(), itemPhoto, "Manual", null, item, "USER", itemPhoto.toString(), image, null, null);
+        photos.preference(owner.userId(), "item:" + item, null, item, itemPhoto, false, null);
+        var codePreference = photos.preference(owner.userId(), "barcode:" + CODE);
+        var itemPreference = photos.preference(owner.userId(), "item:" + item);
+        byte[] codeContent = photos.content(owner.userId(), codePhoto, false);
+        rejectedBinding(owner, codePhoto, otherCode, null, null);
+        rejectedBinding(owner, codePhoto, null, item, 0L);
+        rejectedBinding(owner, itemPhoto, CODE, null, 0L);
+        assertEquals(codePreference, photos.preference(owner.userId(), "barcode:" + CODE));
+        assertEquals(itemPreference, photos.preference(owner.userId(), "item:" + item));
+        assertArrayEquals(codeContent, photos.content(owner.userId(), codePhoto, false));
+        assertArrayEquals(image, photos.content(owner.userId(), itemPhoto, false));
+        assertEquals("PENDING", photos.metadata(owner.userId(), codePhoto).status());
+        assertEquals("PENDING", photos.metadata(owner.userId(), itemPhoto).status());
+    }
+
+    @Test
+    void anotherOwnersApprovedPhotoCanOnlyBeSelectedForItsMatchingBarcode() throws Exception {
+        var owner = actor();
+        var other = actor();
+        String code = "7898080643209", wrongCode = "7898080643216";
+        for (var person : List.of(owner, other))
+            catalog.createProduct(
+                    person.userId(), new Product(UUID.randomUUID(), "Shared", code, MeasurementType.UNIT));
+        catalog.createProduct(other.userId(), new Product(UUID.randomUUID(), "Wrong", wrongCode, MeasurementType.UNIT));
+        UUID id = UUID.randomUUID(), item = manualItem(other);
+        byte[] image = new br.com.carrim.adapter.out.catalog.PhotoImageCodec().normalize(raster(), "image/png");
+        photos.create(owner.userId(), id, "Shared", code, null, "USER", id.toString(), image, null, null);
+        photos.preference(owner.userId(), "barcode:" + code, code, null, id, false, null);
+        photos.decide(id, "APPROVE", 0L, null);
+        var matched = photos.preference(other.userId(), "barcode:" + code, code, null, id, false, null);
+        rejectedBinding(other, id, wrongCode, null, null);
+        rejectedBinding(other, id, null, item, null);
+        assertEquals(matched, photos.preference(other.userId(), "barcode:" + code));
+        assertEquals("APPROVED", photos.metadata(other.userId(), id).status());
+        assertArrayEquals(image, photos.content(other.userId(), id, false));
+    }
+
+    @Test
+    void replacementPreservesBytesReferencedByALegacyCrossTargetPreferenceWithoutAllowingApproval() throws Exception {
+        var owner = actor();
+        product(owner);
+        UUID prior = UUID.randomUUID(), current = UUID.randomUUID(), item = manualItem(owner);
+        upload(owner, prior);
+        bind(owner, prior, null);
+        byte[] content = photos.content(owner.userId(), prior, false);
+        // Simulate a preference persisted before target validation was introduced.
+        jdbc.update(
+                "INSERT INTO carrim.photo_preferences(user_id,preference_key,item_id,photo_id,hidden) VALUES (?,?,?,?,false)",
+                owner.userId(),
+                "item:" + item,
+                item,
+                prior);
+        upload(owner, current);
+        bind(owner, current, 0L);
+        assertEquals(
+                current, photos.preference(owner.userId(), "barcode:" + CODE).photoId());
+        assertEquals(prior, photos.preference(owner.userId(), "item:" + item).photoId());
+        assertEquals("PENDING", photos.metadata(owner.userId(), prior).status());
+        assertEquals(0, photos.metadata(owner.userId(), prior).version());
+        assertArrayEquals(content, photos.content(owner.userId(), prior, false));
+        mvc.perform(post("/api/v1/photo-admin/photos/" + prior + "/decision")
+                        .header("X-Carrim-Photo-Admin", ADMIN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"decision\":\"APPROVE\",\"version\":0}"))
+                .andExpect(status().isConflict());
+        assertEquals("PENDING", photos.metadata(owner.userId(), current).status());
+        assertNotNull(photos.content(owner.userId(), current, false));
+    }
+
     @Test
     void unboundCandidateCannotBeApproved() throws Exception {
         var owner = actor();

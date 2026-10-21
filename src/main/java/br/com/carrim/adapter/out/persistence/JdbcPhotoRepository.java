@@ -263,10 +263,13 @@ public class JdbcPhotoRepository implements PhotoRepository {
                 || hidden && photoId != null) throw new IllegalArgumentException();
         if (photoId != null) {
             var accessible = jdbc.queryForObject(
-                    "SELECT count(*) FROM carrim.product_photos WHERE id=? AND status<>'DELETED' AND (user_id=? OR status='APPROVED')",
+                    "SELECT count(*) FROM carrim.product_photos WHERE id=? AND status<>'DELETED' AND (user_id=? OR status='APPROVED') "
+                            + "AND barcode IS NOT DISTINCT FROM ? AND item_id IS NOT DISTINCT FROM ?",
                     Integer.class,
                     photoId,
-                    owner);
+                    owner,
+                    code,
+                    itemId);
             if (accessible == 0) throw new NoSuchElementException();
         }
         var previous = jdbc.query(
@@ -299,10 +302,12 @@ public class JdbcPhotoRepository implements PhotoRepository {
                     key);
         }
         // The current choice is authoritative; obsolete pending contributions cannot later be published.
+        // Pending content was only accessible to its owner; protect their active legacy references.
         jdbc.update(
                 "UPDATE carrim.product_photos SET status='DELETED',content=NULL,version=version+1,updated_at=clock_timestamp() "
                         + "WHERE user_id=? AND source='USER' AND status='PENDING' AND id IS DISTINCT FROM ? "
-                        + "AND barcode IS NOT DISTINCT FROM ? AND item_id IS NOT DISTINCT FROM ?",
+                        + "AND barcode IS NOT DISTINCT FROM ? AND item_id IS NOT DISTINCT FROM ? "
+                        + "AND NOT EXISTS (SELECT 1 FROM carrim.photo_preferences p WHERE p.user_id=carrim.product_photos.user_id AND p.photo_id=carrim.product_photos.id AND p.hidden=false)",
                 owner,
                 photoId,
                 code,
@@ -352,10 +357,13 @@ public class JdbcPhotoRepository implements PhotoRepository {
             throw new CatalogConflictException();
         if (decision.equals("APPROVE")
                 && jdbc.queryForObject(
-                                "SELECT count(*) FROM carrim.photo_preferences WHERE user_id=? AND photo_id=? AND hidden=false",
+                                "SELECT count(*) FROM carrim.photo_preferences WHERE user_id=? AND photo_id=? AND hidden=false "
+                                        + "AND barcode IS NOT DISTINCT FROM ? AND item_id IS NOT DISTINCT FROM ?",
                                 Integer.class,
                                 owners.getFirst(),
-                                id)
+                                id,
+                                old.barcode(),
+                                old.itemId())
                         == 0) throw new CatalogConflictException();
         jdbc.update(
                 "UPDATE carrim.product_photos SET status=?,version=version+1,reviewed_at=clock_timestamp(),updated_at=clock_timestamp(),review_reason=? WHERE id=?",
