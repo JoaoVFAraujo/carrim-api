@@ -263,7 +263,7 @@ public class JdbcPhotoRepository implements PhotoRepository {
                 || hidden && photoId != null) throw new IllegalArgumentException();
         if (photoId != null) {
             var accessible = jdbc.queryForObject(
-                    "SELECT count(*) FROM carrim.product_photos WHERE id=? AND (user_id=? OR status='APPROVED')",
+                    "SELECT count(*) FROM carrim.product_photos WHERE id=? AND status<>'DELETED' AND (user_id=? OR status='APPROVED')",
                     Integer.class,
                     photoId,
                     owner);

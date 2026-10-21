@@ -214,6 +214,37 @@ class PhotoApiTests extends PostgresTestSupport {
     }
 
     @Test
+    void deletedAndSupersededPhotosCannotReplaceTheCurrentPendingPreference() throws Exception {
+        var owner = actor();
+        product(owner);
+        UUID superseded = UUID.randomUUID(), current = UUID.randomUUID(), deleted = UUID.randomUUID();
+        upload(owner, superseded);
+        bind(owner, superseded, null);
+        upload(owner, current);
+        bind(owner, current, 0L);
+        upload(owner, deleted);
+        photos.delete(owner.userId(), deleted);
+        assertEquals("DELETED", photos.metadata(owner.userId(), superseded).status());
+        assertEquals("DELETED", photos.metadata(owner.userId(), deleted).status());
+        byte[] currentContent = photos.content(owner.userId(), current, false);
+        var currentPreference = photos.preference(owner.userId(), "barcode:" + CODE);
+        long audit = jdbc.queryForObject("SELECT count(*) FROM carrim.photo_review_audit", Long.class);
+        for (UUID tombstone : List.of(superseded, deleted)) {
+            var body = Map.of("barcode", CODE, "photoId", tombstone, "hidden", false, "version", 1);
+            mvc.perform(put("/api/v1/products/photos/preferences/barcode-" + CODE)
+                            .header("Authorization", "Bearer " + owner.accessToken())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(json.writeValueAsString(body)))
+                    .andExpect(status().isNotFound());
+            assertEquals(currentPreference, photos.preference(owner.userId(), "barcode:" + CODE));
+            assertEquals("PENDING", photos.metadata(owner.userId(), current).status());
+            assertEquals(0, photos.metadata(owner.userId(), current).version());
+            assertArrayEquals(currentContent, photos.content(owner.userId(), current, false));
+            assertEquals(audit, jdbc.queryForObject("SELECT count(*) FROM carrim.photo_review_audit", Long.class));
+        }
+    }
+
+    @Test
     void unboundCandidateCannotBeApproved() throws Exception {
         var owner = actor();
         product(owner);
