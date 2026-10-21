@@ -1,5 +1,10 @@
 # Changelog
 
+## Não lançado — catálogo automático em 20/10/2026
+
+- Consulta autenticada somente leitura por código, com catálogo pessoal e sugestões Open Food Facts v3, cache limitado, orçamento de chamadas e ativação externa desabilitada por padrão em prod. Scanner confirma preço e grava pelo sync existente; foto opcional sem persistência offline.
+- Backend: 147 testes com PostgreSQL isolado; mobile: 204 testes com integração real. Sem incremento de versão ou deploy; aparelho e aceitação final pendentes.
+
 ## Não lançado — consolidação em 16/10/2026
 
 - Push idempotente (V5), journal/pull por proprietário (V6), perfil de produção e CI integrados pelos PRs #11–#13.

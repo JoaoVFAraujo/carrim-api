@@ -1,6 +1,6 @@
 # Estado, métricas e próximos passos
 
-Atualizado em **19/10/2026**. Fonte única de retomada: atualizar estado/prioridades aqui, sem novos documentos por sessão.
+Atualizado em **20/10/2026**. Fonte única de retomada: atualizar estado/prioridades aqui, sem novos documentos por sessão.
 
 ## Onde paramos
 
@@ -108,3 +108,11 @@ Operação futura: latência/erros, readiness, conexões do banco e restauraçõ
 | Técnicas condicionais    | Coalescência segura, índices de busca conforme volume, CSP/telemetria mínima e análise contínua de dependências                                                                               |
 
 Ideias não são entregas nem compromissos de prazo. Promoções complexas (leve/pague, cartão, cashback, cupons, progressivos), GPS e IA ficam fora do núcleo V1. Rever prioridades com uso real, sem criar arquitetura/documento por possibilidade.
+
+## Catálogo automático — 20/10/2026
+
+Etapas 1–3 implementadas nas branches feature/catalogo-automatico: avaliação inicial do Open Food Facts, consulta protegida no backend e ficha do scanner com sugestão/atribuição/foto opcional e cadastro manual. Sem migrations, mudança de versão ou deploy. Revisão e CI de cada head devem ser conferidos nos respectivos PRs antes da integração.
+
+Amostra de conveniência consultada em 20/10: 7891000100103 (Leite Condensado Moça), 7894900011517 (Coca-Cola 2 L) e 3017620422003 (Nutella) encontrados com imagem; 7896001122333 (código ilustrativo) e 7891515431146 não encontrados. Retornos de aproximadamente 0,67–1,08 s. Essa amostra selecionada não mede cobertura do Brasil nem substitui códigos reais/regionais do usuário. Fonte escolhida para homologação; release depende de licença/capacidade/privacidade conforme Segurança.
+
+Validação no PC: backend 147 testes passaram com PostgreSQL isolado, Spotless/ArchUnit/build; frontend 204 testes passaram com integração HTTP/PostgreSQL/SQLite real habilitada, sem skips, incluindo consulta pessoal autenticada nos modos web e nativo sem gravar catálogo/fila. Lint, formatação, SQLite e build passaram; permanece aviso do bundle inicial (~1,16 MB), sem novo aviso de CSS. Revisão independente encontrou troca de compra durante await e guarda de produto por peso após recebimento pelo sync; ambos corrigidos com testes e revisão final sem novos apontamentos. Navegador em origem isolada consultou fornecedor real, exibiu foto/atribuição/preço vazio e não criou produtos/itens antes da confirmação; após salvar, PostgreSQL recebeu uma unidade por 899 centavos e a segunda leitura usou SQLite sem nova consulta online. Captura sem overflow horizontal na largura DOM efetiva de 300 px; não equivale a aprovação visual do usuário ou teste Android. Permanecem etapas 4–5: revisão completa de fluxo/layout com usuário, fotos offline e distribuição de APK atualizado, além de API HTTPS acessível ao aparelho. APK debug anterior instalado no Moto G73 em 20/10 não contém esta funcionalidade e está sem API nativa configurada; instalação/abertura/SQLite foram conferidos, não equivalem a aceitação física completa.

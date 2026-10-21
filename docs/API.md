@@ -133,3 +133,19 @@ Erros de negócio usam `{code,message}` sanitizados; não assumir esse envelope 
 JSON monetário/peso/quantidade exige inteiros; não há coerção de decimal para inteiro. Corpo POST/PUT/PATCH até 2 MiB, payload individual de sync até 32 KiB. Demais limites de negócio descritos acima. Política e limites externos de produção em [Segurança](SEGURANCA.md).
 
 Referências de implementação: controllers/DTOs em `src/main/java/br/com/carrim/adapter/in/web`, testes `BusinessApiTests`, `NativeHttpApiTests`, `SyncApiTests` e [Spring Security — tokens opacos](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/opaque-token.html).
+
+## Sugestão de produto por código
+
+GET `/products/lookup/{code}`, com Bearer e `Cache-Control: no-store`. Aceita 8, 12 ou 13 dígitos ASCII, preservando zeros. Consulta primeiro o produto do proprietário; depois, se habilitado, o Open Food Facts. Não cria produto, item ou journal e não retorna preços pessoais de terceiros.
+
+Resposta 200:
+
+```json
+{"status":"FOUND","source":"OPEN_FOOD_FACTS","barcode":"7891000100103","name":"Leite Condensado Integral moça","brand":"Nestlé, Moça","quantity":"395 g","imageUrl":null,"sourceUrl":"https://world.openfoodfacts.org/product/7891000100103","licenseUrl":"https://opendatacommons.org/licenses/odbl/1-0/","measurementType":null}
+```
+
+`status`: FOUND, NOT_FOUND, UNAVAILABLE, RATE_LIMITED ou DISABLED. Em resultados sem produto, source e campos descritivos são nulos. `source`: PERSONAL ou OPEN_FOOD_FACTS quando encontrado. Produto pessoal mantém measurementType UNIT/WEIGHT; sugestão externa não infere medida, preço ou quantidade da compra. `quantity` descreve a embalagem. Nome até 120 caracteres, marca até 120, conteúdo até 80 e imagem opcional HTTPS de images.openfoodfacts.org. Cliente usa links de atribuição oficiais fixos. Entrada inválida: 400; Bearer ausente/inválido: 401. Falha do banco mantém o tratamento 503 existente.
+
+Limites por JVM: 10 consultas/min/proprietário; 10 chamadas externas/min em janela deslizante; duas buscas externas distintas simultâneas, com deduplicação por código. Cache somente externo, 512 entradas: positivo 24 h, negativo 15 min. Falhas não viram ausência; 429/503 do fornecedor provocam cooldown de 60–300 s conforme Retry-After. HTTP externo sem retry, com timeout total de 5 s, corpo até 64 KiB e sem redirecionamento.
+
+Fora de prod, a consulta externa está habilitada por padrão. Em prod, `CARRIM_CATALOG_EXTERNAL_ENABLED` é false por padrão. Antes de habilitar, cumprir os requisitos de licença, capacidade, privacidade e HTTPS descritos em Segurança. Consulta pessoal continua disponível quando a fonte externa está desabilitada.

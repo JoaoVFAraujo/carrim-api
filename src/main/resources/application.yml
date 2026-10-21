@@ -25,3 +25,8 @@ server:
     include-message: never
     include-stacktrace: never
     include-binding-errors: never
+
+
+carrim:
+  catalog:
+    external-enabled: ${CARRIM_CATALOG_EXTERNAL_ENABLED:true}
