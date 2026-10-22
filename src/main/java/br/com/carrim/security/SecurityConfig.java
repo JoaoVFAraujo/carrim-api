@@ -64,7 +64,15 @@ public class SecurityConfig {
 
     @Bean
     @Order(1)
-    SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain apiChain(
+            HttpSecurity http,
+            @org.springframework.beans.factory.annotation.Qualifier("nativeCorsConfigurationSource")
+                    org.springframework.beans.factory.ObjectProvider<
+                                    org.springframework.web.cors.CorsConfigurationSource>
+                            corsSource)
+            throws Exception {
+        var cors = corsSource.getIfAvailable();
+        if (cors != null) http.cors(configuration -> configuration.configurationSource(cors));
         return http.securityMatcher("/api/v1/**")
                 .addFilterBefore(new BootstrapRateFilter(), BearerTokenAuthenticationFilter.class)
                 .addFilterAfter(new PayloadLimitFilter(), AuthorizationFilter.class)

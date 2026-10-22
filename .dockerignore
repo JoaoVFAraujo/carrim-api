@@ -1,4 +1,10 @@
 *
-!target/
-target/*
-!target/carrim-api-0.0.8.jar
+!.mvn/
+!.mvn/**
+!mvnw
+!pom.xml
+!src/
+!src/**
+src/test/
+!config/
+!config/supabase-ca.crt

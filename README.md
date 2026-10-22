@@ -72,3 +72,20 @@ CI em [.github/workflows/verify.yml](.github/workflows/verify.yml) executa verif
 ## Governança
 
 Preservar alterações locais. Branch feature/fix da main, PR com comentário exato `@codex review`, correções, merge commit e exclusão da branch concluída, conforme autorização do usuário e AGENTS.md. Um documento não autoriza commit, push, PR, merge ou deploy por si só.
+
+
+## Render + Supabase (homologação gratuita)
+
+A imagem Docker agora compila a aplicação a partir do Git com JDK 25; não depende de um JAR do PC. Publicar somente commits integrados por PR e aprovados no CI. Render: serviço Docker Free, uma instância, região Virginia, perfis `prod,render`, `PORT` fornecida pela plataforma e HTTP health check `/healthz`. Desativar deploy automático inicialmente. O contorno de HTTPS do perfil render presume exclusivamente o ingresso TLS gerenciado da plataforma; nunca ativar esse perfil em servidor HTTP diretamente exposto. Cabeçalhos de IP encaminhado continuam ignorados.
+
+Configurar no ambiente do serviço, sem Git/chat/logs: `SPRING_DATASOURCE_URL` (JDBC do Session Pooler IPv4, banco postgres, `sslmode=verify-full` e `sslrootcert=/app/supabase-ca.crt`), `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`; credenciais separadas de Flyway em `CARRIM_MIGRATION_USERNAME` e `CARRIM_MIGRATION_PASSWORD`. Perfil Render limita o pool a três conexões. Chave de administração: somente o hash SHA-256 em `CARRIM_PHOTO_ADMIN_TOKEN_SHA256`, chave original guardada pelo operador. Habilitar consulta externa explicitamente com `CARRIM_CATALOG_EXTERNAL_ENABLED=true` após conferir orçamento/licença.
+
+Usar schema privado `carrim`, fora dos schemas expostos na Data API. Flyway V1–V7 continua sendo a única fonte das migrations; não executar as mesmas migrations por outra ferramenta. Separar usuário de migração (dono apenas do schema) e usuário da aplicação (DML), sem privilégios de administrador Supabase. Não copiar banco pessoal, tokens ou provas de instalações locais automaticamente. Validar TLS, auth, isolamento entre usuários, sync/idempotência e fotos antes de configurar o APK.
+
+Fotos continuam em BYTEA no PostgreSQL, incluindo aprovação e acesso privado das candidaturas. Supabase Storage é uma melhoria separada: sua franquia de arquivos não aumenta a capacidade atual das fotos no banco. Fazer backup/restauração incluindo mídia antes de uso real.
+
+No APK o frontend está embarcado; a API recebe CORS somente de `https://localhost`, sem cookies, para rotas nativas Bearer. Bootstraps web e administração ficam fora dessa permissão. Actuator permanece privado em loopback; `/healthz` expõe apenas UP/DOWN e retorna 503 quando o banco não responde. Nunca colocar senha do banco ou chave administrativa no APK.
+
+Render Free pode dormir e a franquia de horas é compartilhada com outros serviços Free do workspace. Supabase Free pode pausar por baixa atividade. Validar latência/consumo real; não tratar esses planos como disponibilidade garantida de produção.
+
+O limitador de bootstrap usa o IP do socket, portanto clientes podem compartilhar o limite de 60/min atrás de um proxy Render. Isso limita disponibilidade em carga; não confiar em X-Forwarded-For arbitrário para contornar. Validar limite e proteção no ingresso antes de ampliar o público.
