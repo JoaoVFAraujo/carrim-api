@@ -48,6 +48,21 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Order(0)
+    SecurityFilterChain photoAdminChain(HttpSecurity http, PhotoAdminAccess access) throws Exception {
+        return http.securityMatcher("/api/v1/photo-admin/**")
+                .addFilterAfter(new PayloadLimitFilter(), AuthorizationFilter.class)
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth.anyRequest()
+                        .access((authentication, context) ->
+                                new AuthorizationDecision(access.allowed(context.getRequest()))))
+                .exceptionHandling(
+                        errors -> errors.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+                .build();
+    }
+
+    @Bean
     @Order(1)
     SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
         return http.securityMatcher("/api/v1/**")

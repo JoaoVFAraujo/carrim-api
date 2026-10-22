@@ -20,6 +20,8 @@ Ao retomar, ler este README, AGENTS.md e roadmap. Atualizar o documento do assun
 
 Consulta autenticada de sugestões por código: `GET /api/v1/products/lookup/{code}`. Fonte externa Open Food Facts com cache e limites; nenhuma gravação na consulta. Em prod, fonte externa desabilitada por padrão até homologação/licenças. Contrato e configuração em [API](docs/API.md) e [Segurança](docs/SEGURANCA.md).
 
+Fotos persistentes e moderação: ficha/Carrinho usam imagens locais, fila de mídia separada e candidaturas públicas somente após aprovação. Painel no mobile em `/admin/fotos`; hash da chave configurado no ambiente `CARRIM_PHOTO_ADMIN_TOKEN_SHA256`, sem credenciais padrão ou no APK. Contratos e limites em API/Segurança.
+
 ## Executar localmente
 
 JDK 25 completo, PostgreSQL 18 e Maven Wrapper incluído. API na porta 8082, frontend na 4202. O banco local `carrim` deve existir. Configure no ambiente ou na execução do IntelliJ:
@@ -36,7 +38,7 @@ SPRING_DATASOURCE_PASSWORD=<definir somente no ambiente>
 .\mvnw.cmd spring-boot:run
 ```
 
-Linux/macOS: `./mvnw spring-boot:run`. Flyway aplica V1–V6 no schema carrim; Hibernate apenas valida. A aplicação não cria banco/usuário. Não modificar migrations aplicadas nem usar clean/reset para resolver divergência.
+Linux/macOS: `./mvnw spring-boot:run`. Flyway aplica V1–V7 no schema carrim; Hibernate apenas valida. A aplicação não cria banco/usuário. Não modificar migrations aplicadas nem usar clean/reset para resolver divergência.
 
 ## Validar e empacotar
 

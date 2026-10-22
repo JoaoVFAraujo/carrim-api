@@ -21,6 +21,13 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 public class ApiErrors {
     public record ErrorBody(String code, String message) {}
 
+    @ExceptionHandler(br.com.carrim.application.photos.PhotoLimitException.class)
+    ResponseEntity<ErrorBody> photoLimit(br.com.carrim.application.photos.PhotoLimitException ignored) {
+        return ResponseEntity.status(429)
+                .header("Retry-After", "60")
+                .body(new ErrorBody("PHOTO_LIMIT", "Limite de fotos atingido. Tente novamente mais tarde."));
+    }
+
     @ExceptionHandler({
         IllegalArgumentException.class,
         HttpMessageNotReadableException.class,

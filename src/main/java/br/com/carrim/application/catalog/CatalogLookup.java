@@ -1,11 +1,13 @@
 package br.com.carrim.application.catalog;
 
+import br.com.carrim.application.photos.PhotoRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -18,6 +20,7 @@ public final class CatalogLookup {
     private final ExternalProductCatalog external;
     private final Clock clock;
     private final boolean enabled;
+    private final PhotoRepository photos;
     private final Object lock = new Object();
     private final LinkedHashMap<String, Cached> cache = new LinkedHashMap<>();
     private final Map<String, CompletableFuture<ProductLookup>> pending = new HashMap<>();
@@ -26,6 +29,16 @@ public final class CatalogLookup {
     private long cooldownUntil;
 
     public CatalogLookup(CatalogRepository catalog, ExternalProductCatalog external, Clock clock, boolean enabled) {
+        this(catalog, external, clock, enabled, null);
+    }
+
+    public CatalogLookup(
+            CatalogRepository catalog,
+            ExternalProductCatalog external,
+            Clock clock,
+            boolean enabled,
+            PhotoRepository photos) {
+        this.photos = photos;
         this.catalog = catalog;
         this.external = external;
         this.clock = clock;
@@ -62,6 +75,31 @@ public final class CatalogLookup {
                     null,
                     product.measurementType());
         }
+        if (photos != null) {
+            try {
+                var approved = photos.approved(code);
+                return new ProductLookup(
+                        ProductLookup.Status.FOUND,
+                        ProductLookup.Source.CARRIM_APPROVED,
+                        code,
+                        approved.name(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null);
+            } catch (NoSuchElementException absent) {
+                /* Only approved public photos can populate a shared product. */
+            }
+        }
+        return externalPhoto(owner, code);
+    }
+
+    /** Shares the bounded public cache/budget without returning a personal product. */
+    public ProductLookup externalPhoto(UUID owner, String code) {
+        if (owner == null || code == null || !code.matches("(?:[0-9]{8}|[0-9]{12}|[0-9]{13})"))
+            throw new IllegalArgumentException();
         if (!enabled) return ProductLookup.empty(code, ProductLookup.Status.DISABLED);
         CompletableFuture<ProductLookup> future;
         boolean leader = false;

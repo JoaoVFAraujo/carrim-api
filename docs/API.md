@@ -136,7 +136,7 @@ Referências de implementação: controllers/DTOs em `src/main/java/br/com/carri
 
 ## Sugestão de produto por código
 
-GET `/products/lookup/{code}`, com Bearer e `Cache-Control: no-store`. Aceita 8, 12 ou 13 dígitos ASCII, preservando zeros. Consulta primeiro o produto do proprietário; depois, se habilitado, o Open Food Facts. Não cria produto, item ou journal e não retorna preços pessoais de terceiros.
+GET `/products/lookup/{code}`, com Bearer e `Cache-Control: no-store`. Aceita 8, 12 ou 13 dígitos ASCII, preservando zeros. Consulta primeiro o produto do proprietário, depois a contribuição CARRIM_APPROVED e, se habilitado e ainda sem resultado, o Open Food Facts. Não cria produto, item ou journal e não retorna preços pessoais de terceiros.
 
 Resposta 200:
 
@@ -144,8 +144,38 @@ Resposta 200:
 {"status":"FOUND","source":"OPEN_FOOD_FACTS","barcode":"7891000100103","name":"Leite Condensado Integral moça","brand":"Nestlé, Moça","quantity":"395 g","imageUrl":null,"sourceUrl":"https://world.openfoodfacts.org/product/7891000100103","licenseUrl":"https://opendatacommons.org/licenses/odbl/1-0/","measurementType":null}
 ```
 
-`status`: FOUND, NOT_FOUND, UNAVAILABLE, RATE_LIMITED ou DISABLED. Em resultados sem produto, source e campos descritivos são nulos. `source`: PERSONAL ou OPEN_FOOD_FACTS quando encontrado. Produto pessoal mantém measurementType UNIT/WEIGHT; sugestão externa não infere medida, preço ou quantidade da compra. `quantity` descreve a embalagem. Nome até 120 caracteres, marca até 120, conteúdo até 80 e imagem opcional HTTPS de images.openfoodfacts.org. Cliente usa links de atribuição oficiais fixos. Entrada inválida: 400; Bearer ausente/inválido: 401. Falha do banco mantém o tratamento 503 existente.
+`status`: FOUND, NOT_FOUND, UNAVAILABLE, RATE_LIMITED ou DISABLED. Em resultados sem produto, source e campos descritivos são nulos. `source`: PERSONAL, CARRIM_APPROVED ou OPEN_FOOD_FACTS quando encontrado. Produto pessoal mantém measurementType UNIT/WEIGHT; sugestão externa não infere medida, preço ou quantidade da compra. `quantity` descreve a embalagem. Nome até 120 caracteres, marca até 120, conteúdo até 80 e imagem opcional HTTPS de images.openfoodfacts.org. Cliente usa links de atribuição oficiais fixos. Entrada inválida: 400; Bearer ausente/inválido: 401. Falha do banco mantém o tratamento 503 existente.
 
 Limites por JVM: 10 consultas/min/proprietário; 10 chamadas externas/min em janela deslizante; duas buscas externas distintas simultâneas, com deduplicação por código. Cache somente externo, 512 entradas: positivo 24 h, negativo 15 min. Falhas não viram ausência; 429/503 do fornecedor provocam cooldown de 60–300 s conforme Retry-After. HTTP externo sem retry, com timeout total de 5 s, corpo até 64 KiB e sem redirecionamento.
 
 Fora de prod, a consulta externa está habilitada por padrão. Em prod, `CARRIM_CATALOG_EXTERNAL_ENABLED` é false por padrão. Antes de habilitar, cumprir os requisitos de licença, capacidade, privacidade e HTTPS descritos em Segurança. Consulta pessoal continua disponível quando a fonte externa está desabilitada.
+## Fotos, preferência e aprovação
+
+Fotos de usuários são candidatas públicas com status PENDING. Somente o autor e o administrador veem conteúdo pendente/rejeitado; outros clientes precisam de Bearer e só acessam imagens APPROVED. A troca pendente não substitui a foto pública anterior. A consulta `/products/lookup/{code}` tenta o catálogo pessoal, o catálogo CARRIM_APPROVED e depois Open Food Facts; CARRIM_APPROVED retorna nome/código sem URL de imagem externa. O conteúdo é obtido pelas rotas de mídia autenticadas.
+
+Rotas de cliente, todas sob `/api/v1/products/photos`:
+
+| Método e caminho | Contrato |
+| --- | --- |
+| PUT `/{id}` | `{name,barcode,itemId,contentType,imageBase64}`; UUID imutável; JPEG/PNG até 512000 bytes decodificados; produto próprio por barcode ou item próprio sem código; retorna PhotoView PENDING |
+| POST `/{id}/external` | `{name,barcode,itemId}`; importa somente foto resolvida no Open Food Facts, retorna EXTERNAL própria com licença/origem |
+| GET `/{id}` | Metadados próprios ou aprovados; autor também recebe tombstone DELETED |
+| GET `/{id}/content` | JPEG reprocessado, no-store/nosniff; conteúdo DELETED e foto não aprovada de terceiro retornam 404 |
+| DELETE `/{id}` | Retirada própria idempotente; apaga bytes e retorna tombstone DELETED; repetir ou reenviar upload antigo não ressuscita foto |
+| GET `/mine?limit=100&offset=0` | Metadados próprios paginados, sem bytes |
+| GET `/approved/{barcode}` | Última foto aprovada para o código, ou 404; não expõe proprietário nem ID de item privado |
+| GET `/preferences?limit=100&offset=0` | Preferências próprias paginadas |
+| GET `/preferences/{key}` | Uma preferência própria exata ou 404 |
+| PUT `/preferences/{key}` | `{barcode,itemId,photoId,hidden,version}`; criação version null, alteração com versão atual; repetição da mesma escolha retorna estado atual |
+
+`key` na URL é `barcode-CODIGO` ou `item-UUID`; na resposta é `barcode:CODIGO` ou `item:UUID`. `PhotoView`: id, barcode, itemId, name, source (USER/OPEN_FOOD_FACTS), status (PENDING/APPROVED/REJECTED/DELETED/EXTERNAL), version, contentHash, sourceUrl, licenseUrl, updatedAt e own. Bytes ficam fora de listas/snapshots. A preferência e o arquivo são estruturas separadas: upload pode chegar depois da finalização sem alterar itens encerrados.
+
+UUID de upload é idempotente para o mesmo conteúdo de entrada e contexto; mudar o pedido gera 409. Uma nova escolha retira candidatos USER/PENDING superados, conservando a imagem pública APPROVED anterior. Aprovação exige vínculo vigente e versão correspondente. Tombstones ficam disponíveis para reconciliação. Limites: 100 fotos com bytes e 1000 registros por proprietário, 200 preferências; escritas 20/min/proprietário. Importação de imagem tem orçamento global próprio de 10/min e concorrência 2, além do orçamento do catálogo JSON.
+
+Administração usa `/api/v1/photo-admin/photos`, sem promover a identidade anônima:
+
+- GET `?status=PENDING&limit=20&offset=0`, com filtro também APPROVED/REJECTED.
+- GET `/{id}/content` para revisar a prévia.
+- POST `/{id}/decision`, `{decision:APPROVE|REJECT,version,reason?}`; auditoria registra decisão, versão anterior, data e observação. Rejeitar uma imagem aprovada retira sua publicação.
+
+Cabeçalho exclusivo `X-Carrim-Photo-Admin`: chave aleatória base64url canônica de 32 bytes (43 caracteres). O servidor recebe somente seu hash SHA-256 hexadecimal pela variável `CARRIM_PHOTO_ADMIN_TOKEN_SHA256` (hash do texto da chave, não dos bytes decodificados). Sem configuração, acesso administrativo permanece fechado. HTTPS obrigatório em prod; HTTP apenas em conexão loopback fora de prod. Chave correta continua válida após tentativas inválidas no mesmo IP; limites de falhas se aplicam a tentativas não autorizadas. Não incluir essa chave em api-config, APK, SQLite, Web Storage, URLs, logs ou Git.
