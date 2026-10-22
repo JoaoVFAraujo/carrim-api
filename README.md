@@ -38,7 +38,7 @@ SPRING_DATASOURCE_PASSWORD=<definir somente no ambiente>
 .\mvnw.cmd spring-boot:run
 ```
 
-Linux/macOS: `./mvnw spring-boot:run`. Flyway aplica V1–V7 no schema carrim; Hibernate apenas valida. A aplicação não cria banco/usuário. Não modificar migrations aplicadas nem usar clean/reset para resolver divergência.
+Linux/macOS: `./mvnw spring-boot:run`. Flyway aplica V1–V8 no schema carrim; Hibernate apenas valida. A aplicação não cria banco/usuário. Não modificar migrations aplicadas nem usar clean/reset para resolver divergência.
 
 ## Validar e empacotar
 
@@ -80,7 +80,7 @@ A imagem Docker agora compila a aplicação a partir do Git com JDK 25; não dep
 
 Configurar no ambiente do serviço, sem Git/chat/logs: `SPRING_DATASOURCE_URL` (JDBC do Session Pooler IPv4, banco postgres, `sslmode=verify-full` e `sslrootcert=/app/supabase-ca.crt`), `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`; credenciais separadas de Flyway em `CARRIM_MIGRATION_USERNAME` e `CARRIM_MIGRATION_PASSWORD`. Perfil Render limita o pool a três conexões. Chave de administração: somente o hash SHA-256 em `CARRIM_PHOTO_ADMIN_TOKEN_SHA256`, chave original guardada pelo operador. Habilitar consulta externa explicitamente com `CARRIM_CATALOG_EXTERNAL_ENABLED=true` após conferir orçamento/licença.
 
-Usar schema privado `carrim`, fora dos schemas expostos na Data API. Flyway V1–V7 continua sendo a única fonte das migrations; não executar as mesmas migrations por outra ferramenta. Separar usuário de migração (dono apenas do schema) e usuário da aplicação (DML), sem privilégios de administrador Supabase. Não copiar banco pessoal, tokens ou provas de instalações locais automaticamente. Validar TLS, auth, isolamento entre usuários, sync/idempotência e fotos antes de configurar o APK.
+Usar schema privado `carrim`, fora dos schemas expostos na Data API. Flyway V1–V8 continua sendo a única fonte das migrations; não executar as mesmas migrations por outra ferramenta. Separar usuário de migração (dono apenas do schema) e usuário da aplicação (DML), sem privilégios de administrador Supabase. Não copiar banco pessoal, tokens ou provas de instalações locais automaticamente. Validar TLS, auth, isolamento entre usuários, sync/idempotência e fotos antes de configurar o APK.
 
 Fotos continuam em BYTEA no PostgreSQL, incluindo aprovação e acesso privado das candidaturas. Supabase Storage é uma melhoria separada: sua franquia de arquivos não aumenta a capacidade atual das fotos no banco. Fazer backup/restauração incluindo mídia antes de uso real.
 
