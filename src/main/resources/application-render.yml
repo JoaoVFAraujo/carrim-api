@@ -1,0 +1,14 @@
+# Activate together with prod, only behind Render's HTTPS ingress.
+server:
+  address: 0.0.0.0
+  port: ${PORT:10000}
+  forward-headers-strategy: none
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 3
+      minimum-idle: 0
+      connection-timeout: 2500
+  flyway:
+    user: ${CARRIM_MIGRATION_USERNAME:${SPRING_DATASOURCE_USERNAME}}
+    password: ${CARRIM_MIGRATION_PASSWORD:${SPRING_DATASOURCE_PASSWORD}}
