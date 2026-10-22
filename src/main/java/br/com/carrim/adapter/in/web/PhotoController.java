@@ -34,12 +34,22 @@ public class PhotoController {
             String barcode,
             UUID itemId,
             @NotBlank String contentType,
-            @NotBlank @Size(max = 682668) String imageBase64) {}
+            @NotBlank @Size(max = 682668) String imageBase64) {
+        @AssertTrue
+        public boolean isTargetValid() {
+            return (barcode == null) != (itemId == null);
+        }
+    }
 
     public record External(
             @NotBlank @Size(max = 120) String name,
             @NotBlank String barcode,
-            UUID itemId) {}
+            UUID itemId) {
+        @AssertTrue
+        public boolean isTargetValid() {
+            return itemId == null;
+        }
+    }
 
     private static String normalizeKey(String key) {
         if (key.startsWith("barcode-")) return "barcode:" + key.substring(8);

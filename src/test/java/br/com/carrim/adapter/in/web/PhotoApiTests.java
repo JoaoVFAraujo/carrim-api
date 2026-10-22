@@ -356,6 +356,60 @@ class PhotoApiTests extends PostgresTestSupport {
     }
 
     @Test
+    void exactlyOnePhotoTargetIsRequiredBeforePersistenceOrExternalDownload() throws Exception {
+        var owner = actor();
+        product(owner);
+        UUID item = manualItem(owner);
+        assertDoesNotThrow(() -> photos.validateTarget(owner.userId(), CODE, null));
+        assertDoesNotThrow(() -> photos.validateTarget(owner.userId(), null, item));
+        assertInstanceOf(
+                IllegalArgumentException.class,
+                assertThrows(
+                                org.springframework.dao.InvalidDataAccessApiUsageException.class,
+                                () -> photos.validateTarget(owner.userId(), CODE, item))
+                        .getMostSpecificCause());
+        assertInstanceOf(
+                IllegalArgumentException.class,
+                assertThrows(
+                                org.springframework.dao.InvalidDataAccessApiUsageException.class,
+                                () -> photos.validateTarget(owner.userId(), null, null))
+                        .getMostSpecificCause());
+        assertInstanceOf(
+                IllegalArgumentException.class,
+                assertThrows(
+                                org.springframework.dao.InvalidDataAccessApiUsageException.class,
+                                () -> photos.validateTarget(null, CODE, null))
+                        .getMostSpecificCause());
+        UUID ambiguous = UUID.randomUUID(), missing = UUID.randomUUID(), imported = UUID.randomUUID();
+        mvc.perform(put("/api/v1/products/photos/" + ambiguous)
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(uploadBody(CODE, item)))
+                .andExpect(status().isBadRequest());
+        mvc.perform(put("/api/v1/products/photos/" + missing)
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(uploadBody(null, null)))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/products/photos/" + imported + "/external")
+                        .header("Authorization", "Bearer " + owner.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json.writeValueAsString(Map.of("name", "Aveia", "barcode", CODE, "itemId", item))))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(external);
+        assertEquals(
+                0,
+                jdbc.queryForObject(
+                        "SELECT count(*) FROM carrim.product_photos WHERE user_id=?", Integer.class, owner.userId()));
+        assertEquals(
+                0,
+                jdbc.queryForObject(
+                        "SELECT count(*) FROM carrim.photo_preferences WHERE user_id=?",
+                        Integer.class,
+                        owner.userId()));
+    }
+
+    @Test
     void unboundCandidateCannotBeApproved() throws Exception {
         var owner = actor();
         product(owner);

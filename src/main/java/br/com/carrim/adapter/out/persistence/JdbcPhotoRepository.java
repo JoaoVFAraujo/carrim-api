@@ -42,7 +42,7 @@ public class JdbcPhotoRepository implements PhotoRepository {
     }
 
     private void target(UUID owner, String code, UUID itemId) {
-        if (owner == null || code == null && itemId == null) throw new IllegalArgumentException();
+        if (owner == null || (code == null) == (itemId == null)) throw new IllegalArgumentException();
         if (code != null) {
             if (!code.matches("(?:[0-9]{8}|[0-9]{12}|[0-9]{13})")) throw new IllegalArgumentException();
             if (jdbc.queryForObject(
